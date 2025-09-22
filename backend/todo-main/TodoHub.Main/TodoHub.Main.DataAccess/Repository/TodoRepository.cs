@@ -1,0 +1,72 @@
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using TodoHub.Main.Core.DTOs.Request;
+using TodoHub.Main.Core.DTOs.Response;
+using TodoHub.Main.Core.Entities;
+using TodoHub.Main.Core.Interfaces;
+using TodoHub.Main.DataAccess.Context;
+
+namespace TodoHub.Main.DataAccess.Repository
+{
+    public class TodoRepository : ITodoRepository
+    {
+        private readonly ApplicationDbContext _context;
+        private readonly IMapper _mapper;
+        public TodoRepository(ApplicationDbContext context, IMapper mapper)
+        {
+            _context = context;
+            _mapper = mapper;
+        }
+
+        public async Task AddTodoAsyncRepo(CreateTodoDTO todo, Guid OwnerId)
+        {
+            var entity = _mapper.Map<TodoEntity>(todo);
+            entity.OwnerId = OwnerId;
+            await _context.Todos.AddAsync(entity);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<bool> DeleteTodoAsyncRepo(Guid id, Guid OwnerId)
+        {
+            var todo = await _context.Todos.FirstOrDefaultAsync(t => t.Id == id && t.OwnerId == OwnerId);
+            if (todo == null) { return false; }
+
+            _context.Todos.Remove(todo);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<TodoEntity?> GetTodoByIdAsyncRepo(Guid id, Guid OwnerId)
+        {
+            return await _context.Todos.FirstOrDefaultAsync(t => t.Id == id && t.OwnerId == OwnerId);
+        }
+
+        public async Task<List<TodoDTO>> GetTodosAsyncRepo(Guid UserId)
+        {
+            var todos = await _context.Todos.Where(t => t.OwnerId == UserId).ToListAsync();
+            var todoDTOs = _mapper.Map<List<TodoDTO>>(todos);
+            return todoDTOs;
+
+        }
+
+        public async Task UpdateTodoAsyncRepo(UpdateTodoDTO todo_to_update, Guid OwnerId, Guid TodoId)
+        {
+            var todo = await _context.Todos.FirstOrDefaultAsync(t => t.Id == TodoId && t.OwnerId == OwnerId);
+
+            if (todo == null)
+                throw new Exception("Todo not found or you don't have access.");
+
+            if (!string.IsNullOrEmpty(todo_to_update.Title))
+                todo.Title = todo_to_update.Title;
+
+            if (!string.IsNullOrEmpty(todo_to_update.Description))
+                todo.Description = todo_to_update.Description;
+
+            if (todo_to_update.IsCompleted.HasValue)
+                todo.IsCompleted = todo_to_update.IsCompleted.Value;
+
+            todo.UpdatedDate = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+        }
+    }
+}

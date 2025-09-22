@@ -1,0 +1,63 @@
+## Build output
+bin/
+obj/
+out/
+build/
+
+## User-specific files
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Visual Studio
+.vs/
+
+## Rider
+.idea/
+*.sln.iml
+
+## Logs
+*.log
+
+## Environment files
+.env
+.env.*
+
+Migrations/
+
+## Packages
+*.nupkg
+*.snupkg
+*.tgz
+
+## NuGet
+*.nuget.props
+*.nuget.targets
+*.lock.json
+project.lock.json
+packages/
+*.deps.json
+
+## Publish
+*.publishsettings
+*.pubxml
+*.pubxml.user
+publish/
+
+## Secrets
+secrets.json
+
+## Misc
+*.dbmdl
+*.bak
+*.mdf
+*.ldf
+*.sqlite
+*.db
+
+## OS files
+Thumbs.db
+ehthumbs.db
+.DS_Store
