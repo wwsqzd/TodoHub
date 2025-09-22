@@ -4,12 +4,13 @@ using Microsoft.Extensions.Configuration;
 
 namespace TodoHub.Main.DataAccess.Context
 {
+
     public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<ApplicationDbContext>
     {
         public ApplicationDbContext CreateDbContext(string[] arg)
         {
             var config = new ConfigurationBuilder()
-               .AddUserSecrets<ApplicationDbContextFactory>()
+               .AddUserSecrets<ApplicationDbContextFactory>() // reads all keys from secrets
                //.AddJsonFile("appsettings.json", optional: true) 
                .Build();
 

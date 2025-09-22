@@ -1,11 +1,9 @@
 ﻿
-
 using FluentValidation;
 using FluentValidation.Results;
 using TodoHub.Main.Core.Common;
 using TodoHub.Main.Core.DTOs.Request;
 using TodoHub.Main.Core.DTOs.Response;
-using TodoHub.Main.Core.Entities;
 using TodoHub.Main.Core.Interfaces;
 
 namespace TodoHub.Main.Core.Services
@@ -15,13 +13,16 @@ namespace TodoHub.Main.Core.Services
         private readonly ITodoRepository _todoRepository;
         private readonly AbstractValidator<CreateTodoDTO> _createvalidator;
         private readonly AbstractValidator<UpdateTodoDTO> _updatevalidator;
+        private readonly ITodoCacheService _todoCacheService;
 
-        public TodoService(ITodoRepository todoRepository, AbstractValidator<CreateTodoDTO> create_validator, AbstractValidator<UpdateTodoDTO> updatevalidator)
+        public TodoService(ITodoRepository todoRepository, AbstractValidator<CreateTodoDTO> create_validator, AbstractValidator<UpdateTodoDTO> updatevalidator, ITodoCacheService todoCacheService)
         {
             _todoRepository = todoRepository;
             _createvalidator = create_validator;
             _updatevalidator = updatevalidator;
+            _todoCacheService = todoCacheService;
         }
+        // add todo 
         public async Task<Result<CreateTodoDTO>> AddTodoAsync(CreateTodoDTO todo, Guid OwnerId)
         {
             ValidationResult res = _createvalidator.Validate(todo);
@@ -30,35 +31,46 @@ namespace TodoHub.Main.Core.Services
                 return Result<CreateTodoDTO>.Fail("incorrect data entry");
             }
             await _todoRepository.AddTodoAsyncRepo(todo, OwnerId);
+            await _todoCacheService.DeleteCache(OwnerId);
             return Result<CreateTodoDTO>.Ok(todo);
         }
 
+        // delete todo
         public async Task<Result<bool>> DeleteTodoAsync(Guid id, Guid OwnerId)
         {
             await _todoRepository.DeleteTodoAsyncRepo(id, OwnerId);
+            await _todoCacheService.DeleteCache(OwnerId);
             return Result<bool>.Ok(true);
         }
 
-        public async Task<Result<TodoEntity>> GetTodoByIdAsync(Guid id, Guid OwnerId)
+        // get todo by id
+        public async Task<Result<TodoDTO>> GetTodoByIdAsync(Guid id, Guid OwnerId)
         {
             var todo = await _todoRepository.GetTodoByIdAsyncRepo(id, OwnerId);
             if (todo == null)
             {
-                return Result<TodoEntity>.Fail("Todo does not exist");
+                return Result<TodoDTO>.Fail("Todo does not exist");
             }
-            return Result<TodoEntity>.Ok(todo);
+            return Result<TodoDTO>.Ok(todo);
         }
 
+        // get all todos
         public async Task<Result<List<TodoDTO>>> GetTodosAsync(Guid UserId)
         {
+            var todos_redis = await _todoCacheService.GetAllTodosAsync(UserId);
+            if (todos_redis?.Any() == true)
+            {
+                return Result<List<TodoDTO>>.Ok(todos_redis, "Todos from redis");
+            }
             var todos = await _todoRepository.GetTodosAsyncRepo(UserId);
             if (todos == null)
             {
-                return Result<List<TodoDTO>>.Fail("null");
+                return Result<List<TodoDTO>>.Fail("Todos is empty in Database Postgresql");
             }
-            return Result<List<TodoDTO>>.Ok(todos);
+            await _todoCacheService.SetTodosAsync(todos, UserId);
+            return Result<List<TodoDTO>>.Ok(todos, "Todos from db");
         }
-
+        // update todo
         public async Task<Result<UpdateTodoDTO>> UpdateTodoAsync(UpdateTodoDTO todo, Guid OwnerId, Guid TodoId)
         {
             ValidationResult res = _updatevalidator.Validate(todo);
@@ -67,6 +79,7 @@ namespace TodoHub.Main.Core.Services
                 return Result<UpdateTodoDTO>.Fail("Incorrect data entry");
             }
             await _todoRepository.UpdateTodoAsyncRepo(todo, OwnerId, TodoId);
+            await _todoCacheService.DeleteCache(OwnerId);
             return Result<UpdateTodoDTO>.Ok(todo);
         }
     }

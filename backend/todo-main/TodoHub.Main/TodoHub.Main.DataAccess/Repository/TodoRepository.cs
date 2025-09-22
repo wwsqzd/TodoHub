@@ -8,16 +8,19 @@ using TodoHub.Main.DataAccess.Context;
 
 namespace TodoHub.Main.DataAccess.Repository
 {
+    // Repository for Todo
     public class TodoRepository : ITodoRepository
     {
         private readonly ApplicationDbContext _context;
         private readonly IMapper _mapper;
+
         public TodoRepository(ApplicationDbContext context, IMapper mapper)
         {
             _context = context;
             _mapper = mapper;
         }
 
+        // Adding a todo 
         public async Task AddTodoAsyncRepo(CreateTodoDTO todo, Guid OwnerId)
         {
             var entity = _mapper.Map<TodoEntity>(todo);
@@ -26,6 +29,7 @@ namespace TodoHub.Main.DataAccess.Repository
             await _context.SaveChangesAsync();
         }
 
+        // Deleting todo
         public async Task<bool> DeleteTodoAsyncRepo(Guid id, Guid OwnerId)
         {
             var todo = await _context.Todos.FirstOrDefaultAsync(t => t.Id == id && t.OwnerId == OwnerId);
@@ -36,11 +40,15 @@ namespace TodoHub.Main.DataAccess.Repository
             return true;
         }
 
-        public async Task<TodoEntity?> GetTodoByIdAsyncRepo(Guid id, Guid OwnerId)
+        // Get one todo by ID
+        public async Task<TodoDTO?> GetTodoByIdAsyncRepo(Guid id, Guid OwnerId)
         {
-            return await _context.Todos.FirstOrDefaultAsync(t => t.Id == id && t.OwnerId == OwnerId);
+            var todos = await _context.Todos.FirstOrDefaultAsync(t => t.Id == id && t.OwnerId == OwnerId);
+            var todosDTOs = _mapper.Map<TodoDTO>(todos);
+            return todosDTOs;
         }
 
+        // Get everything todo by ID
         public async Task<List<TodoDTO>> GetTodosAsyncRepo(Guid UserId)
         {
             var todos = await _context.Todos.Where(t => t.OwnerId == UserId).ToListAsync();
@@ -49,6 +57,7 @@ namespace TodoHub.Main.DataAccess.Repository
 
         }
 
+        // Update todo
         public async Task UpdateTodoAsyncRepo(UpdateTodoDTO todo_to_update, Guid OwnerId, Guid TodoId)
         {
             var todo = await _context.Todos.FirstOrDefaultAsync(t => t.Id == TodoId && t.OwnerId == OwnerId);

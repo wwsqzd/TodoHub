@@ -13,7 +13,6 @@ namespace TodoHub.Main.DataAccess.Repository
         private readonly ApplicationDbContext _context;
         private readonly IMapper _mapper;
 
-        // принимает маппер и контекст
         public UserRepository(ApplicationDbContext context, IMapper mapper)
         {
             _context = context;
@@ -27,7 +26,7 @@ namespace TodoHub.Main.DataAccess.Repository
             await _context.SaveChangesAsync();
         }
 
-        // всех users мапим
+        // Get all users
         public async Task<List<UserDTO>> GetUsersAsyncRepo()
         {
             var users = await _context.Users.ToListAsync();
@@ -35,20 +34,20 @@ namespace TodoHub.Main.DataAccess.Repository
             return userDtos;
         }
 
-        // Ищем по id
+        // Get user with id
         public async Task<UserEntity?> GetUserByIdAsyncRepo(Guid id)
         {
             return await _context.Users.FindAsync(id);
         }
 
-        // ищем по имейлу
+        // Get user with email
         public async Task<UserEntity?> GetUserByEmailAsyncRepo(string email)
         {
             return await _context.Users
             .FirstOrDefaultAsync(u => u.Email == email);
         }
 
-        // удаляем пользователя
+        // delete user
         public async Task<bool> DeleteUserAsyncRepo(Guid id)
         {
             var user = await _context.Users.FindAsync(id);
@@ -59,6 +58,7 @@ namespace TodoHub.Main.DataAccess.Repository
             return true;
         }
 
+        // get profile
         public async Task<UserDTO> GetMeRepo(Guid id)
         {
             var user = await _context.Users.FindAsync(id);

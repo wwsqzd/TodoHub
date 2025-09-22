@@ -5,22 +5,19 @@ using TodoHub.Main.Core.Interfaces;
 
 namespace TodoHub.Main.API.Controllers
 {
-    // Контролллер аунтефикации и авторизации
+    // Authentication and authorization controller
     [Route("auth")]
     [ApiController]
     public class AuthController : ControllerBase
     {
-        // берет сервисы всякие
         private readonly IUserService _userService;
 
-
-        // Контструктор
         public AuthController(IUserService userService)
         {
             _userService = userService;
         }
 
-        // для ветки "auth/login"
+        // "auth/login"
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDTO dto)
         {
@@ -29,11 +26,11 @@ namespace TodoHub.Main.API.Controllers
             {
                 return Unauthorized(new { message = token.Error });
             }
-            // возвращаем
+            // return
             return Ok(token);
         }
 
-        // для ветки "auth/register"
+        //для ветки "auth/register"
         [HttpPost("register")]
         public async Task<IActionResult> AddUser([FromBody] RegisterDTO user)
         {
@@ -43,7 +40,6 @@ namespace TodoHub.Main.API.Controllers
                 return Conflict(result.Error);
             }
             return Ok();
-
         }
     }
 }

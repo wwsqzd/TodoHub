@@ -7,6 +7,7 @@ using TodoHub.Main.Core.Entities;
 
 namespace TodoHub.Main.Core.Mappings
 {
+    // Converting models to other formats
     public class MappingProfile : Profile
     {
         public MappingProfile() 

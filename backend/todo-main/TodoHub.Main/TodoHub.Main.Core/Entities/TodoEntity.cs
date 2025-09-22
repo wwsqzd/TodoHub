@@ -4,6 +4,7 @@ namespace TodoHub.Main.Core.Entities
 {
     public class TodoEntity
     {
+        // What we store in the database
         [Key]
         public Guid Id { get; set; } = Guid.NewGuid();
         public string Title { get; set; } = string.Empty;

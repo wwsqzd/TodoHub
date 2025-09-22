@@ -11,7 +11,7 @@ namespace TodoHub.Main.Core.Interfaces
         Task AddTodoAsyncRepo(CreateTodoDTO todo, Guid OwnerId);
         Task<bool> DeleteTodoAsyncRepo(Guid id, Guid OwnerId);
 
-        Task<TodoEntity?> GetTodoByIdAsyncRepo(Guid id, Guid OwnerId);
+        Task<TodoDTO?> GetTodoByIdAsyncRepo(Guid id, Guid OwnerId);
         Task UpdateTodoAsyncRepo(UpdateTodoDTO todo, Guid OwnerId, Guid TodoId);
         Task<List<TodoDTO>> GetTodosAsyncRepo(Guid UserId);
     }

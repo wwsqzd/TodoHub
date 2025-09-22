@@ -31,7 +31,7 @@ namespace TodoHub.Main.Core.Services
             _config = config;
         }
 
-        // добавляем пользователя
+        // add user
         public async Task<Result<RegisterDTO>> AddUserAsync(RegisterDTO user)
         {
             ValidationResult resValidator = _register_validator.Validate(user);
@@ -57,10 +57,10 @@ namespace TodoHub.Main.Core.Services
                 return Result<LoginResponseDTO>.Fail("Incorrect data entry");
             }
 
-            // ищем юсера по email 
+            // search user with email
             var user = await _userRepository.GetUserByEmailAsyncRepo(login_user.Email);
 
-            // если пароль нулевой или не равен то ошибку кидаем
+            // if the password is zero or not equal, we throw an error
             if (user == null)
                 return Result<LoginResponseDTO>.Fail("Invalid email or password");
             bool isPasswordValid = _passwordService.VerifyPassword(user.Password, login_user.Password);
@@ -68,19 +68,19 @@ namespace TodoHub.Main.Core.Services
             if (!isPasswordValid)
                 return Result<LoginResponseDTO>.Fail("Invalid password");
 
-            // это клеймы внутри нашего jwt токена. тут и имя и все роли и инфа
+            // jwt claims
             var claims = new[]
             {
             new Claim(ClaimTypes.Name, user.Name),
             new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin" : "User"),
             new Claim("UserId", user.Id.ToString())
             };
-            // так тут берем наш секретный пароль для создания jwt токена
+            // secret key for jwt
             var key = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            // генерация токена
+            // generate
             var token = new JwtSecurityToken(
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Audience"],
@@ -99,25 +99,25 @@ namespace TodoHub.Main.Core.Services
 
         }
 
-        // всех users мапим
+        // get all users
         public async Task<List<UserDTO>> GetUsersAsync()
         {
             return await _userRepository.GetUsersAsyncRepo();
         }
 
-        // Ищем по id
+        // seach with id
         public async Task<UserEntity?> GetUserByIdAsync(Guid id)
         {
             return await _userRepository.GetUserByIdAsyncRepo(id);
         }
 
-        // ищем по имейлу
+        // search with email
         public async Task<UserEntity?> GetUserByEmailAsync(string email)
         {
             return await _userRepository.GetUserByEmailAsyncRepo(email);
         }
 
-        // удаляем пользователя
+        // delete user
         public async Task<Result<bool>> DeleteUserAsync(Guid id)
         {
             var user = await _userRepository.GetUserByIdAsyncRepo(id);
@@ -129,6 +129,7 @@ namespace TodoHub.Main.Core.Services
             return Result<bool>.Ok(true);
         }
 
+        // get profile
         public async Task<Result<UserDTO>> GetMe(Guid userId)
         {
             var user = await _userRepository.GetMeRepo(userId);

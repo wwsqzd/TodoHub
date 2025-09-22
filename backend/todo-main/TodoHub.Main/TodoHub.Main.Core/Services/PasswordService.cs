@@ -5,6 +5,7 @@ using TodoHub.Main.Core.Interfaces;
 
 namespace TodoHub.Main.Core.Services
 {
+    // password hashing
     public class PasswordService : IPasswordService
     {
         private readonly PasswordHasher<string> _hasher = new();

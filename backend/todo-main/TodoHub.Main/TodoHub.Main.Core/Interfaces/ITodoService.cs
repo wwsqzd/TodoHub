@@ -12,7 +12,7 @@ namespace TodoHub.Main.Core.Interfaces
         Task<Result<CreateTodoDTO>> AddTodoAsync(CreateTodoDTO todo, Guid OwnerId);
         Task<Result<bool>> DeleteTodoAsync(Guid id, Guid OwnerId);
 
-        Task<Result<TodoEntity>> GetTodoByIdAsync(Guid id, Guid OwnerId);
+        Task<Result<TodoDTO>> GetTodoByIdAsync(Guid id, Guid OwnerId);
         Task<Result<UpdateTodoDTO>> UpdateTodoAsync(UpdateTodoDTO todo, Guid OwnerId, Guid TodoId);
         Task<Result<List<TodoDTO>>> GetTodosAsync(Guid UserId);
     }
