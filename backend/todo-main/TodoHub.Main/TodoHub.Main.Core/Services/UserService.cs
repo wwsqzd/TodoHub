@@ -85,19 +85,64 @@ namespace TodoHub.Main.Core.Services
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(1),
+                expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(_config["Jwt:Expire"]!)),
                 signingCredentials: creds
             );
+
+            var refreshtoken = await _passwordService.AddRefreshToken(user.Id);
+
+
 
             var response = new LoginResponseDTO
             {
                 Token = new JwtSecurityTokenHandler().WriteToken(token),
-                ExpiresAt = token.ValidTo
+                ExpiresAt = token.ValidTo,
+                RefreshToken = refreshtoken
             };
 
             return Result<LoginResponseDTO>.Ok(response);
 
         }
+
+        // refresh token 
+        public async Task<Result<LoginResponseDTO>> RefreshLoginAsync(string old_refresh_token)
+        {
+            
+            var user = await _userRepository.GetUserByIdAsyncRepo(_passwordService.GetUserId(old_refresh_token));
+
+            // jwt claims
+            var claims = new[]
+            {
+            new Claim(ClaimTypes.Name, user!.Name),
+            new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin" : "User"),
+            new Claim("UserId", user.Id.ToString())
+            };
+            // secret key for jwt
+            var key = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            // generate
+            var token = new JwtSecurityToken(
+                issuer: _config["Jwt:Issuer"],
+                audience: _config["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(_config["Jwt:Expire"]!)),
+                signingCredentials: creds
+            );
+
+            var refreshtoken = await _passwordService.RefreshToken(old_refresh_token);
+
+            var response = new LoginResponseDTO
+            {
+                Token = new JwtSecurityTokenHandler().WriteToken(token),
+                ExpiresAt = token.ValidTo,
+                RefreshToken = refreshtoken
+            };
+
+            return Result<LoginResponseDTO>.Ok(response);
+        }
+        
 
         // get all users
         public async Task<List<UserDTO>> GetUsersAsync()
@@ -138,6 +183,20 @@ namespace TodoHub.Main.Core.Services
                 return Result<UserDTO>.Ok(user);
             }
             return Result<UserDTO>.Fail("User does not exist");
+        }
+
+        // logout
+        public async Task<Result<bool>> LogoutUserAsync(string refresh_token)
+        {
+            try
+            { 
+                await _passwordService.RevokeRefreshToken(refresh_token);
+                return Result<bool>.Ok(true);
+            }
+            catch (Exception ex) 
+            {
+                return Result<bool>.Fail($"{ex}");
+            }
         }
     }
 }

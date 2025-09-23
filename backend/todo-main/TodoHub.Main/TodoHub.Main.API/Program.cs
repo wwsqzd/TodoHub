@@ -4,12 +4,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using StackExchange.Redis;
 using System.Text;
+using System.Threading.RateLimiting;
 using TodoHub.Main.Core.DTOs.Request;
 using TodoHub.Main.Core.Interfaces;
 using TodoHub.Main.Core.Mappings;
 using TodoHub.Main.Core.Services;
 using TodoHub.Main.Core.Validation;
 using TodoHub.Main.DataAccess.Context;
+using TodoHub.Main.DataAccess.Interfaces;
 using TodoHub.Main.DataAccess.Repository;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -48,6 +50,8 @@ builder.Services.AddScoped<AbstractValidator<LoginDTO>, LoginDTOValidator>();
 
 builder.Services.AddScoped<ITodoService, TodoService>();
 builder.Services.AddScoped<ITodoRepository, TodoRepository>();
+
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<AbstractValidator<CreateTodoDTO>, CreateTodoDTOValidator>();
 builder.Services.AddScoped<AbstractValidator<UpdateTodoDTO>, UpdateTodoDTOValidator>();
 builder.Services.AddSingleton<ITodoCacheService, TodoCacheService>();
@@ -106,9 +110,72 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+//  rate limiting
+builder.Services.AddRateLimiter(options =>
+{
+    //options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+    //{
+    //    var clientIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+    //    return RateLimitPartition.GetFixedWindowLimiter(clientIp, _ => new FixedWindowRateLimiterOptions
+    //    {
+    //        PermitLimit = 5,
+    //        Window = TimeSpan.FromSeconds(10),
+    //        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+    //        QueueLimit = 2
+    //    });
+    //});
+    options.AddPolicy("LoginPolicy", HttpContext =>
+    {
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "uknown";
+
+        return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 5,
+            Window = TimeSpan.FromMinutes(1)
+        });
+    });
+
+    options.AddPolicy("RefreshPolicy", httpContext =>
+    {
+        var userId = httpContext.User.FindFirst("UserId")?.Value ?? "anon";
+        return RateLimitPartition.GetFixedWindowLimiter(userId, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 20,
+            Window = TimeSpan.FromMinutes(1)
+        });
+    });
+
+    options.AddPolicy("TodosPolicy", HttpContext =>
+    {
+        var userId = HttpContext.User.FindFirst("UserId")?.Value ?? "anon";
+        return RateLimitPartition.GetFixedWindowLimiter(userId, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 100,
+            Window = TimeSpan.FromMinutes(1)
+        });
+    });
+
+    options.AddPolicy("SignUpPolicy", HttpContext =>
+    {
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "uknown";
+
+        return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 3,
+            Window = TimeSpan.FromMinutes(1)
+        });
+    });
+
+    options.RejectionStatusCode = 429; 
+});
+
+
 
 var app = builder.Build();
 
+// rate limiting
+app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())
 {

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using TodoHub.Main.Core.DTOs.Request;
 using TodoHub.Main.Core.Interfaces;
 
@@ -18,6 +19,7 @@ namespace TodoHub.Main.API.Controllers
 
 
         [HttpGet]
+        [EnableRateLimiting("TodosPolicy")]
         public async Task<IActionResult> GetTodos()
         {
             var userIdClaim = User.FindFirst("UserId")?.Value;
