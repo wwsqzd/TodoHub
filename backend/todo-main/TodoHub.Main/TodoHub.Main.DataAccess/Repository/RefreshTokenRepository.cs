@@ -1,4 +1,5 @@
 ﻿
+using Microsoft.EntityFrameworkCore;
 using TodoHub.Main.Core.Entities;
 using TodoHub.Main.DataAccess.Context;
 using TodoHub.Main.DataAccess.Interfaces;
@@ -22,6 +23,14 @@ namespace TodoHub.Main.DataAccess.Repository
                 TokenHash = refreshToken
             };
             await _context.RefreshTokens.AddAsync(entity);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteOldTokensRepo()
+        {
+            var tomorrow = DateTime.UtcNow.AddDays(1);
+            var oldTokens = await _context.RefreshTokens.Where(token => token.Expires < tomorrow || token.Revoked != null).ToListAsync();
+            _context.RemoveRange(oldTokens);
             await _context.SaveChangesAsync();
         }
 

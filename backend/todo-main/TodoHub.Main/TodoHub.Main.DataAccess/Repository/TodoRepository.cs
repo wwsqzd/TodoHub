@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using TodoHub.Main.Core.Common;
 using TodoHub.Main.Core.DTOs.Request;
 using TodoHub.Main.Core.DTOs.Response;
 using TodoHub.Main.Core.Entities;
@@ -40,6 +41,15 @@ namespace TodoHub.Main.DataAccess.Repository
             return true;
         }
 
+        //Deleting all todo in deleted user
+        public async Task<bool> DeleteAllTodoByUserAsyncRepo(Guid OwnerId)
+        {
+            var todos = await _context.Todos.Where(t => t.OwnerId == OwnerId).ToListAsync();
+            _context.Todos.RemoveRange(todos);
+            await _context.SaveChangesAsync();            
+            return true;
+        }
+
         // Get one todo by ID
         public async Task<TodoDTO?> GetTodoByIdAsyncRepo(Guid id, Guid OwnerId)
         {
@@ -48,7 +58,7 @@ namespace TodoHub.Main.DataAccess.Repository
             return todosDTOs;
         }
 
-        // Get everything todo by ID
+        // Get all todo by ID
         public async Task<List<TodoDTO>> GetTodosAsyncRepo(Guid UserId)
         {
             var todos = await _context.Todos.Where(t => t.OwnerId == UserId).ToListAsync();

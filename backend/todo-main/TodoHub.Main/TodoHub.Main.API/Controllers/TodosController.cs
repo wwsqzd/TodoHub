@@ -12,6 +12,7 @@ namespace TodoHub.Main.API.Controllers
     public class TodosController : ControllerBase
     {
         private readonly ITodoService _todoService;
+        
         public TodosController(ITodoService service)
         {
             _todoService = service;
@@ -66,7 +67,7 @@ namespace TodoHub.Main.API.Controllers
             }
             return Ok(todo);
         }
-
+        // Delete Todo
         [HttpDelete("{TodoId}")]
         public async Task<IActionResult> DeleteTodo(Guid TodoId)
         {
@@ -75,9 +76,10 @@ namespace TodoHub.Main.API.Controllers
                 return Unauthorized("Invalid token");
 
             var result = await _todoService.DeleteTodoAsync(TodoId, userId);
+            
             if (!result.Success)
             {
-                return BadRequest("error by deleting");
+                return BadRequest("Error by deleting");
             }
             return Ok(result);
         }

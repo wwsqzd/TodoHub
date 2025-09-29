@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TodoHub.Main.Core.DTOs.Request;
 using TodoHub.Main.Core.DTOs.Response;
 using TodoHub.Main.Core.Interfaces;
 
@@ -12,10 +13,12 @@ namespace TodoHub.Main.API.Controllers
     {
         
         private readonly IUserService _userService;
+        private readonly IQueueProducer _queueProducer;
 
-        public UsersController(IUserService userService)
+        public UsersController(IUserService userService, IQueueProducer producer)
         {
             _userService = userService;
+            _queueProducer = producer;
         }
 
 
@@ -77,6 +80,11 @@ namespace TodoHub.Main.API.Controllers
             if (userIdClaim is null)
                 return Unauthorized();
             var result = await _userService.DeleteUserAsync(id);
+            var dto = new MessageEnvelope{ 
+                Command = "Clean Todos By User", 
+                UserId = id 
+            };
+            _queueProducer.Send(dto);
             if (!result.Success)
             {
                 return NotFound();

@@ -21,6 +21,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
 
+// auth
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -55,6 +56,23 @@ builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<AbstractValidator<CreateTodoDTO>, CreateTodoDTOValidator>();
 builder.Services.AddScoped<AbstractValidator<UpdateTodoDTO>, UpdateTodoDTOValidator>();
 builder.Services.AddSingleton<ITodoCacheService, TodoCacheService>();
+
+
+// rebbitmq
+
+builder.Services.AddHostedService<TodosCleanerHostedService>();
+builder.Services.AddScoped<ITodosCleanerService, TodosCleanerService>();
+builder.Services.AddSingleton<IQueueProducer>(sp =>
+{
+    return QueueProducer.CreateAsync().GetAwaiter().GetResult();
+});
+
+
+// every 12 hours
+builder.Services.AddHostedService<RefreshTokensHostedService>();
+builder.Services.AddScoped<IRefreshTokensCleanerService, RefreshTokensCleanerService>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+
 
 //redis
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
