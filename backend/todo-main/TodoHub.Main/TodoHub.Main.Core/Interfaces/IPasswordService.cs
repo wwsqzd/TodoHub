@@ -6,12 +6,12 @@ namespace TodoHub.Main.Core.Interfaces
     {
         string HashPassword(string password);
         bool VerifyPassword(string hashedPassword, string providedPassword);
-        public Task<string> AddRefreshToken(Guid UserId);
-        public string GenerateRefreshToken();
-        public Task<string> RefreshToken(string token);
-        public Task RevokeRefreshToken(string token);
-        public string HashToken(string token);
-        public Guid GetUserId(string token);
+        Task<string> AddRefreshToken(Guid UserId);
+        string GenerateRefreshToken();
+        Task<string?> RefreshToken(string token, Guid userId);
+        Task RevokeRefreshToken(string token);
+        string HashToken(string token);
+        Task<Guid?> GetUserId(string token);
 
     }
 }

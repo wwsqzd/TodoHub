@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using TodoHub.Main.Core.Entities;
 using TodoHub.Main.DataAccess.Context;
 using TodoHub.Main.DataAccess.Interfaces;
@@ -32,40 +33,55 @@ namespace TodoHub.Main.DataAccess.Repository
             var oldTokens = await _context.RefreshTokens.Where(token => token.Expires < tomorrow || token.Revoked != null).ToListAsync();
             _context.RemoveRange(oldTokens);
             await _context.SaveChangesAsync();
+            Log.Information("Old tokens deleted");
         }
 
-        public RefreshTokenEntity GetToken(string refreshToken)
+        public async Task<RefreshTokenEntity?> GetToken(string refreshToken)
         {
-            var res = _context.RefreshTokens.FirstOrDefault(t => t.TokenHash == refreshToken);
-            return res!;
-        }
-
-        public Guid GetUserIdRepo(string hash_token)
-        {
-            var res = _context.RefreshTokens.FirstOrDefault(t => t.TokenHash == hash_token);
-            return res!.UserId;
-        }
-
-        public async Task RefreshTokenRepo(string refreshToken, string newToken)
-        {
-            var res = _context.RefreshTokens.FirstOrDefault(t => t.TokenHash == refreshToken);
-            if (res != null)
+            var res = await _context.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == refreshToken);
+            if (res == null)
             {
-                res.Revoked = DateTime.UtcNow;
-                res.ReplacedByToken = newToken;
+                return null;
             }
+            return res;
+        }
+
+        public async Task<Guid?> GetUserIdRepo(string hash_token)
+        {
+            var res = await _context.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == hash_token);
+            return res?.UserId;
+        }
+
+        public async Task RefreshTokenRepo(string refreshToken, string newToken, Guid userId)
+        {
+            // revoke old token
+            var res = await _context.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == refreshToken);
+            if (res == null)
+            {
+                return;
+            }
+            res.Revoked = DateTime.UtcNow;
+            res.ReplacedByToken = newToken;
+            // add new token
+            var entity = new RefreshTokenEntity
+            {
+                UserId = userId,
+                TokenHash = newToken
+            };
+            await _context.RefreshTokens.AddAsync(entity);
             await _context.SaveChangesAsync();
         }
 
-
+        // revoke token
         public async Task RevokeRefreshTokenRepo(string refreshToken)
         {
-            var res = _context.RefreshTokens.FirstOrDefault(t => t.TokenHash == refreshToken);
-            if (res != null)
+            var res = await _context.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == refreshToken);
+            if (res == null)
             {
-                res.Revoked = DateTime.UtcNow;
-                await _context.SaveChangesAsync();
+                return;
             }
+            res.Revoked = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
         }
     }
 }

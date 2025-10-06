@@ -1,6 +1,6 @@
 ﻿
-
 using Microsoft.AspNetCore.Identity;
+using Serilog;
 using System.Security.Cryptography;
 using System.Text;
 using TodoHub.Main.Core.Interfaces;
@@ -34,25 +34,33 @@ namespace TodoHub.Main.Core.Services
 
         public async Task<string> AddRefreshToken(Guid UserId)
         {
+            // Ich gebe dem Benutzer den normalen Token zurück und speichere den Hash in der Datenbank.
             var token = GenerateRefreshToken();
             var hash_token = HashToken(token);
+            Log.Information($"TOKEN HASH LOGIN in AddRefreshToken: {hash_token}");
             await _refreshTokenRepository.AddRefreshTokenRepo(hash_token, UserId);
             return token;
         }
 
-        public async Task<string> RefreshToken(string token)
+        public async Task<string?> RefreshToken(string old_refresh_token, Guid userId)
         {
-            var old_hash_token = HashToken(token);
-            var old_token = _refreshTokenRepository.GetToken(old_hash_token);
+            Log.Information($"Token in RefreshToken method: {old_refresh_token}");
+            var old_hash_token = HashToken(old_refresh_token);
+            Log.Information($"Token Hash in RefreshToken method: {old_hash_token}");
+
+            var old_token = await _refreshTokenRepository.GetToken(old_hash_token);
             if (old_token != null && old_token.IsActive)
             {
                 var new_token = GenerateRefreshToken();
                 var new_hash_token = HashToken(new_token);
                 
-                await _refreshTokenRepository.RefreshTokenRepo(old_hash_token, new_hash_token);
+                await _refreshTokenRepository.RefreshTokenRepo(old_hash_token, new_hash_token, userId);
                 return new_token;
+            } else
+            {
+                Log.Error("old token is Expired");
             }
-            throw new Exception("Not Valid");
+            return null;
         }
 
 
@@ -73,16 +81,20 @@ namespace TodoHub.Main.Core.Services
             return Convert.ToBase64String(hash);
         }
 
-        public Guid GetUserId(string token)
+        public async Task<Guid?> GetUserId(string token)
         {
-            var hash_token = HashToken(token);
-            return _refreshTokenRepository.GetUserIdRepo(hash_token);
+            string hash_token = HashToken(token);
+            var userId = await _refreshTokenRepository.GetUserIdRepo(hash_token);
+            if (userId == null) {
+               throw new Exception("User not found"); 
+            }
+            return userId;
         }
 
         public async Task RevokeRefreshToken(string token)
         {
             var hash_token = HashToken(token);
-            var temp = _refreshTokenRepository.GetToken(hash_token);
+            var temp = await _refreshTokenRepository.GetToken(hash_token);
             if (temp != null && temp.IsActive)
             {
                 await _refreshTokenRepository.RevokeRefreshTokenRepo(hash_token);

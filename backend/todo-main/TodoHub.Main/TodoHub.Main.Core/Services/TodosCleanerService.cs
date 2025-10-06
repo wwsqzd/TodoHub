@@ -11,8 +11,6 @@ namespace TodoHub.Main.Core.Services
         {
             _repository = repository;
         }
-
-
         public async Task CleanALlTodosByUser(Guid ownerId)
         {
             await _repository.DeleteAllTodoByUserAsyncRepo(ownerId);

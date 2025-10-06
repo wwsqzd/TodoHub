@@ -31,13 +31,13 @@ namespace TodoHub.Main.Core.Services
                 var userId = Guid.Parse(message);
                 using var scope = _scopeFactory.CreateScope();
                 var todosService = scope.ServiceProvider.GetRequiredService<ITodosCleanerService>();
-                // Вот здесь вызываем Core сервис
+                // Core Service
                 await todosService.CleanALlTodosByUser(userId);
             };
 
             await channel.BasicConsumeAsync("todo_queue", true, consumer);
 
-            // HostedService работает пока приложение запущено
+            // HostedService runs while the application is running :)
             await Task.Delay(Timeout.Infinite, stoppingToken);
         }
     }

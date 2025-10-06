@@ -6,10 +6,10 @@ namespace TodoHub.Main.DataAccess.Interfaces
     public interface IRefreshTokenRepository
     {
         Task AddRefreshTokenRepo(string refreshToken, Guid userId);
-        Task RefreshTokenRepo(string refreshToken, string newToken);
+        Task RefreshTokenRepo(string refreshToken, string newToken, Guid userId);
         Task RevokeRefreshTokenRepo(string refreshToken);
         Task DeleteOldTokensRepo();
-        RefreshTokenEntity GetToken(string refreshToken);
-        Guid GetUserIdRepo(string hash_token);
+        Task<RefreshTokenEntity?> GetToken(string refreshToken);
+        Task<Guid?> GetUserIdRepo(string hash_token);
     }
 }

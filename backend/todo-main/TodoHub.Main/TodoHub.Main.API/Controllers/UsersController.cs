@@ -28,7 +28,7 @@ namespace TodoHub.Main.API.Controllers
         {
             // take the ID from the token
             var userIdClaim = User.FindFirst("UserId")?.Value;
-             
+            
             if (userIdClaim is null)
                 return Unauthorized();
             // parse
@@ -61,9 +61,9 @@ namespace TodoHub.Main.API.Controllers
         public async Task<ActionResult<UserDTO>> GetUserById(Guid id)
         {
             var userIdClaim = User.FindFirst("UserId")?.Value;
-
             if (userIdClaim is null)
                 return Unauthorized();
+
             var user = await _userService.GetUserByIdAsync(id);
             return Ok(user);
         }
@@ -76,9 +76,9 @@ namespace TodoHub.Main.API.Controllers
         public async Task<IActionResult> DeleteUser(Guid id)
         {
             var userIdClaim = User.FindFirst("UserId")?.Value;
-
             if (userIdClaim is null)
                 return Unauthorized();
+
             var result = await _userService.DeleteUserAsync(id);
             var dto = new MessageEnvelope{ 
                 Command = "Clean Todos By User", 

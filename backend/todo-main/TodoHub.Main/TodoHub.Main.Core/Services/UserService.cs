@@ -2,6 +2,7 @@
 using FluentValidation.Results;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -31,7 +32,7 @@ namespace TodoHub.Main.Core.Services
             _config = config;
         }
 
-        // add user
+        // register user
         public async Task<Result<RegisterDTO>> AddUserAsync(RegisterDTO user)
         {
             ValidationResult resValidator = _register_validator.Validate(user);
@@ -49,12 +50,12 @@ namespace TodoHub.Main.Core.Services
         }
 
         // login
-        public async Task<Result<LoginResponseDTO>> LoginUserAsync(LoginDTO login_user)
+        public async Task<(string token, Result<LoginResponseDTO>)> LoginUserAsync(LoginDTO login_user)
         {
             ValidationResult resValidator = _login_validator.Validate(login_user);
             if (!resValidator.IsValid)
             {
-                return Result<LoginResponseDTO>.Fail("Incorrect data entry");
+                return ("", Result<LoginResponseDTO>.Fail("Incorrect data entry"));
             }
 
             // search user with email
@@ -62,12 +63,59 @@ namespace TodoHub.Main.Core.Services
 
             // if the password is zero or not equal, we throw an error
             if (user == null)
-                return Result<LoginResponseDTO>.Fail("Invalid email or password");
+                return ("", Result<LoginResponseDTO>.Fail("Invalid email or password"));
             bool isPasswordValid = _passwordService.VerifyPassword(user.Password, login_user.Password);
 
             if (!isPasswordValid)
-                return Result<LoginResponseDTO>.Fail("Invalid password");
+                return ("", Result<LoginResponseDTO>.Fail("Invalid password"));
 
+            // jwt claims
+            var claims = new[]
+            {
+            new Claim(ClaimTypes.Name, user.Name),
+            new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin" : "User"),
+            new Claim("UserId", user.Id.ToString())
+            };
+            // secret key for jwt
+            var key = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            // generate token
+            var token = new JwtSecurityToken(
+                issuer: _config["Jwt:Issuer"],
+                audience: _config["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(_config["Jwt:Expire"]!)),
+                signingCredentials: creds
+            );
+
+            var refreshtoken = await _passwordService.AddRefreshToken(user.Id);
+
+            var response = new LoginResponseDTO
+            {
+                Token = new JwtSecurityTokenHandler().WriteToken(token),
+                ExpiresAt = token.ValidTo,
+            };
+            Log.Information($"Output Data in Login. Refresh token: {refreshtoken}, accesstoken: {response.Token}");
+            return (refreshtoken, Result<LoginResponseDTO>.Ok(response));
+
+
+        }
+
+        // refresh token 
+        public async Task<(string token, Result<LoginResponseDTO>)> RefreshLoginAsync(string old_refresh_token)
+        {
+            var userIdInToken = await _passwordService.GetUserId(old_refresh_token);
+            if (userIdInToken == null) {
+                return (string.Empty, Result<LoginResponseDTO>.Fail("UserID wird im Token nicht gefunden "));
+            }
+            var user = await _userRepository.GetUserByIdAsyncRepo(userIdInToken.Value);
+            if (user == null)
+            {
+                return (string.Empty, Result<LoginResponseDTO>.Fail("Der Benutzer mit dieser ID wurde nicht gefunden."));
+            }
+           
             // jwt claims
             var claims = new[]
             {
@@ -88,59 +136,22 @@ namespace TodoHub.Main.Core.Services
                 expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(_config["Jwt:Expire"]!)),
                 signingCredentials: creds
             );
-
-            var refreshtoken = await _passwordService.AddRefreshToken(user.Id);
-
-
-
-            var response = new LoginResponseDTO
-            {
-                Token = new JwtSecurityTokenHandler().WriteToken(token),
-                ExpiresAt = token.ValidTo,
-                RefreshToken = refreshtoken
-            };
-
-            return Result<LoginResponseDTO>.Ok(response);
-
-        }
-
-        // refresh token 
-        public async Task<Result<LoginResponseDTO>> RefreshLoginAsync(string old_refresh_token)
-        {
             
-            var user = await _userRepository.GetUserByIdAsyncRepo(_passwordService.GetUserId(old_refresh_token));
-
-            // jwt claims
-            var claims = new[]
+            var refreshtoken = await _passwordService.RefreshToken(old_refresh_token, userIdInToken.Value);
+            
+            
+            if (refreshtoken == null)
             {
-            new Claim(ClaimTypes.Name, user!.Name),
-            new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin" : "User"),
-            new Claim("UserId", user.Id.ToString())
-            };
-            // secret key for jwt
-            var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            // generate
-            var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(_config["Jwt:Expire"]!)),
-                signingCredentials: creds
-            );
-
-            var refreshtoken = await _passwordService.RefreshToken(old_refresh_token);
+                return (string.Empty, Result<LoginResponseDTO>.Fail("Refresh Token is invalid"));
+            }
 
             var response = new LoginResponseDTO
             {
                 Token = new JwtSecurityTokenHandler().WriteToken(token),
                 ExpiresAt = token.ValidTo,
-                RefreshToken = refreshtoken
             };
-
-            return Result<LoginResponseDTO>.Ok(response);
+            Log.Information($"Output data in refresh Login: refresh token {refreshtoken}, access token: {response.Token}");
+            return (refreshtoken, Result<LoginResponseDTO>.Ok(response));
         }
         
 
