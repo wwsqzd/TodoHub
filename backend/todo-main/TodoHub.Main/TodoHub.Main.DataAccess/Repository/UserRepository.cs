@@ -66,5 +66,12 @@ namespace TodoHub.Main.DataAccess.Repository
             return userDto;
 
         }
+
+        public async Task<bool> IsUserAdminRepo(Guid id)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(user => user.Id == id);
+            if (user == null) return false;
+            return user.IsAdmin;
+        }
     }
 }

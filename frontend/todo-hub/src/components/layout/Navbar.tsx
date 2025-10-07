@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function Navbar() {
 
-   const { accessToken } = useAuth();
+   const { accessToken, isAdmin } = useAuth();
 
     return (
         <nav className="w-full h-[110px] justify-between flex bg-white text-white border-b border-gray-200 border-solid">
@@ -19,7 +19,10 @@ export default function Navbar() {
                     </>
                 ) : (
                     <>
-                        <Link href="/dashboard" className="text-black font-bold text-lg">Dashboard</Link> 
+                        <Link href="/dashboard" className="text-black font-bold text-lg">Dashboard</Link>
+                        {isAdmin && (
+                            <Link href="/admin/users" className="text-black font-bold text-lg">Admin</Link>
+                        )}
                         <Link href="/profile" className="text-black font-bold text-lg">Profile</Link>
                     </>
                 )}

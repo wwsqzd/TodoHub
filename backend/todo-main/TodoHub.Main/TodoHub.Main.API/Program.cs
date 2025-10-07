@@ -16,14 +16,6 @@ using TodoHub.Main.DataAccess.Interfaces;
 using TodoHub.Main.DataAccess.Repository;
 
 
-//logger
-//Log.Logger = new LoggerConfiguration()
-//            .MinimumLevel.Information()
-//            .WriteTo.Console()
-//            .WriteTo.File("Logs/myapp.txt", rollingInterval: RollingInterval.Day)
-//            .CreateLogger();
-
-
 // logger
 var logFile = "Logs/myapp.txt";
 foreach (var file in Directory.GetFiles("Logs"))

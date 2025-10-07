@@ -17,5 +17,6 @@ namespace TodoHub.Main.Core.Interfaces
         Task<Result<bool>> LogoutUserAsync(string refresh_token);
         Task<(string token, Result<LoginResponseDTO>)> RefreshLoginAsync(string old_refresh_token);
         Task<Result<UserDTO>> GetMe(Guid id);
+        Task<Result<bool>> IsUserAdmin(Guid id);
     }
 }

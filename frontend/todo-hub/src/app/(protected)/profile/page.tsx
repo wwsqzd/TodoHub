@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { getMe, logOut } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import axios from "axios";
+import { CiUser } from "react-icons/ci";
 
 type Profile = {
     name: string;
@@ -27,7 +29,13 @@ export default function ProfilePage() {
         setProfile(res.value);
         setLoading(false);
 
-    } catch (err: unknown) {    
+    } catch (err: unknown) { 
+        if (axios.isAxiosError(err))
+        {
+            if (err.response?.status === 409) {
+                return;
+            }
+        }  
       if (err instanceof Error) {
         setError(err.message || "An unexpected error occurred");
       } else {
@@ -44,9 +52,10 @@ export default function ProfilePage() {
         try {
             await logOut();
             setAccessToken(null);
-            setProfile(undefined);
             document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"; // Clear cookie
+            setProfile(undefined);
             window.location.href = "/auth/login";
+
         } catch (err) 
         {
             console.error("Logout failed:", err);
@@ -54,19 +63,22 @@ export default function ProfilePage() {
     }
 
   return (
-        <div className="flex flex-col items-center">
+        <div className="min-h-screen flex flex-col items-center">
       {error && <p className="text-red-500">{error}</p>}
       {loading ? (
         <p>Loading profile...</p>
       ) : profile ? (
-        <div className="bg-white rounded shadow p-6 w-full max-w-md flex flex-col items-center justify-center">
-            <h1 className="mb-6 text-2xl font-bold">Profile</h1>
-            <div className="w-full">
+        <div className="bg-white rounded shadow p-6 w-full max-w-md flex flex-col items-center justify-center m-10">
+            <h1 className="mb-6 text-2xl font-bold">Account Profile</h1>
+            <div className="w-[70px] h-[70px] ">
+                <CiUser className="w-full h-full text-gray-400"/>
+            </div>
+            <div className="w-full flex flex-col gap-2 mt-4">
                 <p className="text-left text-sm">Name: {profile.name}</p>
                 <p className="text-left text-sm">Email: {profile.email}</p>
                 <p className="text-left text-sm">Admin: {profile.IsAdmin ? "No" : "Yes"}</p>
             </div>
-          <button className="mt-4 bg-blue-600 text-white rounded py-2 px-4 font-semibold cursor-pointer" onClick={handleLogout}>
+          <button className="mt-4 bg-red-800 text-white rounded py-2 px-4 font-semibold cursor-pointer" onClick={handleLogout}>
             Log out 
             </button>
         </div>

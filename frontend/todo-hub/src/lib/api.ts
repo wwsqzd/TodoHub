@@ -2,6 +2,7 @@ import axios from "axios";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://localhost:7098";
 
 
+
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -89,15 +90,53 @@ export const getMe = async () => {
     console.log(res);
     throw new Error("Error fetching profile");
   }
-    
   return res.data;
 }
 
 
 // refresh token function
-export async function refreshToken() {
+export const refreshToken = async () => {
   const res = await api.post(`${API_URL}/auth/refresh`, {}, { withCredentials: true });
   if (res.status !== 200) throw new Error("Error refreshing token");
+  return res.data;
+}
+
+// fetch is user admin
+export const fetchIsAdmin = async () => {
+  const res = await api.get(`${API_URL}/profile/role`, { withCredentials: true });
+  if (res.status !== 200) throw new Error("Error checking admin status");
+  return res.data;
+}
+
+// fetch users for admin
+export const GetUsers = async () => {
+  const res = await api.get(`${API_URL}/users`, {withCredentials: true});
+  if (res.status !== 200) throw new Error("Error fetching users")
+  return res.data;
+}
+
+
+// todos
+
+
+
+
+// fetch todos
+export const getUserTodos = async () => {
+  const res = await api.get(`${API_URL}/todos`, {withCredentials: true});
+  if (res.status !== 200) throw new Error("Error fetching todos")
+  return res.data;
+}
+
+export const createTodo = async (data: {title: string, description: string}) => {
+  const res = await api.post(`${API_URL}/todos/create`, data, {withCredentials: true});
+  if (res.status !== 201) throw new Error("Error creating todo")
+  return res.data;
+}
+
+export const getTodo = async (id: string) => {
+  const res = await api.get(`${API_URL}/todos/${id}`, {withCredentials: true});
+  if (res.status !== 200) throw new Error("Error fetching Todo")
   return res.data;
 }
 

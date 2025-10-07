@@ -55,7 +55,7 @@ namespace TodoHub.Main.API.Controllers
             {
                 return Conflict(result);
             }
-            return Ok(result);
+            return Created();
         }
 
         // "auth/refresh"

@@ -11,6 +11,7 @@ using TodoHub.Main.Core.DTOs.Request;
 using TodoHub.Main.Core.DTOs.Response;
 using TodoHub.Main.Core.Entities;
 using TodoHub.Main.Core.Interfaces;
+using Zxcvbn;
 
 namespace TodoHub.Main.Core.Services
 {
@@ -40,11 +41,18 @@ namespace TodoHub.Main.Core.Services
             {
                 return Result<RegisterDTO>.Fail("Incorrect data entry");
             }
-            user.Password = _passwordService.HashPassword(user.Password);
             if (await _userRepository.GetUserByEmailAsyncRepo(user.Email) != null)
             {
                 return Result<RegisterDTO>.Fail("This user already exists");
             }
+            var validatepass = Zxcvbn.Core.EvaluatePassword(user.Password);
+            if (validatepass.Score < 3)
+            {
+                return Result<RegisterDTO>.Fail("The password is too weak.");
+            }
+
+            user.Password = _passwordService.HashPassword(user.Password);
+            
             await _userRepository.AddUserAsyncRepo(user);
             return Result<RegisterDTO>.Ok(user);
         }
@@ -205,6 +213,20 @@ namespace TodoHub.Main.Core.Services
                 return Result<bool>.Ok(true);
             }
             catch (Exception ex) 
+            {
+                return Result<bool>.Fail($"{ex}");
+            }
+        }
+
+        // validate user (admin or not)
+        public async Task<Result<bool>> IsUserAdmin(Guid id)
+        {
+            try
+            {
+                bool res = await _userRepository.IsUserAdminRepo(id);
+                return Result<bool>.Ok(res);
+            }
+            catch (Exception ex)
             {
                 return Result<bool>.Fail($"{ex}");
             }

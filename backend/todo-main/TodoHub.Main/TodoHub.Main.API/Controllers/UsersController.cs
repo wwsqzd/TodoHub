@@ -92,5 +92,25 @@ namespace TodoHub.Main.API.Controllers
             return NoContent();
 
         }
+
+        [HttpGet("profile/role")]
+        [Authorize]
+        public async Task<IActionResult> UserRole()
+        {
+            // take the ID from the token
+            var userIdClaim = User.FindFirst("UserId")?.Value;
+
+            if (userIdClaim is null)
+                return Unauthorized();
+            // parse
+            if (!Guid.TryParse(userIdClaim, out var userId))
+                return BadRequest("Invalid user id in token");
+
+            var res = await _userService.IsUserAdmin(userId);
+            if (!res.Success) {
+                return BadRequest();
+            }
+            return Ok(res);
+        }
     }
 }

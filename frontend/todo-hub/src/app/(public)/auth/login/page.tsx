@@ -4,6 +4,7 @@ import { useState } from "react";
 import { login } from "@/lib/api";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import axios from "axios";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -19,8 +20,20 @@ export default function LoginPage() {
     try {
         const response = await login({ email, password });
         setAccessToken(response.value.token);
+        setEmail("");
+        setPassword("");
         window.location.href = "/profile"; // Redirect to home page
     } catch (err: unknown) {
+        if (axios.isAxiosError(err)) {
+            if (err.response?.status === 400) {
+                setError("Invalid email or password");
+                return;
+            }
+            if (err.response?.status === 500) {
+                setError("Server error. Please try again later.");
+                return;
+            }
+        }
         if (err instanceof Error)
         setError(err.message || "An unexpected error occurred");
     } finally {
@@ -61,7 +74,7 @@ export default function LoginPage() {
         <button type="submit" className="bg-blue-600 text-white rounded py-2 font-semibold cursor-pointer">
           {loading ? "Loading..." : "Login"}
         </button>
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-gray-600 text-center">
             {error && <p className="text-red-500 mb-2">{error}</p>}
         </div>
       </form>

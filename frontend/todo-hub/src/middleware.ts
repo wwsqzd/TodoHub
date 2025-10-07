@@ -6,6 +6,7 @@ export function middleware(request: NextRequest) {
   
   const token = request.cookies.get("accessToken")?.value;
 
+
   const isAuthPage = request.nextUrl.pathname.startsWith("/auth/login") 
                   || request.nextUrl.pathname.startsWith("/auth/register");
 
@@ -28,17 +29,6 @@ export function middleware(request: NextRequest) {
   if (!token && request.nextUrl.pathname.startsWith("/admin")) {
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }
-
-  // Если есть токен, но роль не admin
-//   if (token && request.nextUrl.pathname.startsWith("/admin")) {
-//     // тут можно раскодировать JWT и проверить роль
-//     const role = "user"; // TODO: вытащить из токена
-//     if (role !== "admin") {
-//       return NextResponse.redirect(new URL("/dashboard", request.url));
-//     }
-//   }
-
-  return NextResponse.next();
 }
 
 // Укажем, на какие роуты распространяется middleware
