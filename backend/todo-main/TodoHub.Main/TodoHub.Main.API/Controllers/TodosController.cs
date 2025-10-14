@@ -35,7 +35,7 @@ namespace TodoHub.Main.API.Controllers
             return Ok(todos);
         }
 
-
+        // Create Todo
         [HttpPost("create")]
         public async Task<IActionResult> CreateTodo([FromBody] CreateTodoDTO dto)
         {
@@ -46,12 +46,13 @@ namespace TodoHub.Main.API.Controllers
             var result = await _todoService.AddTodoAsync(dto, userId);
             if (!result.Success)
             {
-                return BadRequest();
+                return BadRequest(result.Error);
             }
             return Ok(result);
 
         }
 
+        // Get todo
         [HttpGet("{TodoId}")]
         public async Task<IActionResult> GetTodo(Guid TodoId)
         {
@@ -84,6 +85,7 @@ namespace TodoHub.Main.API.Controllers
             return Ok(result);
         }
 
+        // Modify Todo
         [HttpPatch("{TodoId}")]
         public async Task<IActionResult> UpdateTodo(Guid TodoId, UpdateTodoDTO update_todo)
         {

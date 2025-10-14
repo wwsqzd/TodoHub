@@ -5,6 +5,7 @@ import { getMe, logOut } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
 import { CiUser } from "react-icons/ci";
+import LoadingUI from "@/components/ui/LoadingUI";
 
 type Profile = {
     name: string;
@@ -25,7 +26,6 @@ export default function ProfilePage() {
     }
     try {
         const res = await getMe();
-        console.log("Profile data:", res);
         setProfile(res.value);
         setLoading(false);
 
@@ -52,7 +52,7 @@ export default function ProfilePage() {
         try {
             await logOut();
             setAccessToken(null);
-            document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"; // Clear cookie
+            document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"; 
             setProfile(undefined);
             window.location.href = "/auth/login";
 
@@ -66,7 +66,7 @@ export default function ProfilePage() {
         <div className="min-h-screen flex flex-col items-center">
       {error && <p className="text-red-500">{error}</p>}
       {loading ? (
-        <p>Loading profile...</p>
+        <LoadingUI />
       ) : profile ? (
         <div className="bg-white rounded shadow p-6 w-full max-w-md flex flex-col items-center justify-center m-10">
             <h1 className="mb-6 text-2xl font-bold">Account Profile</h1>

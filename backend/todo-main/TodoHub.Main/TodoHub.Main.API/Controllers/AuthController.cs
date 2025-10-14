@@ -75,11 +75,11 @@ namespace TodoHub.Main.API.Controllers
             if (!response.Success)
             {
                 Log.Error(response.Error);
-                return Conflict(response);
+                return Unauthorized(response);
             }
 
             // new Refresh Token
-            //Response.Cookies.Delete("refreshToken");
+            Response.Cookies.Delete("refreshToken");
             Response.Cookies.Append("refreshToken", token, new CookieOptions
             {
                 HttpOnly = true,

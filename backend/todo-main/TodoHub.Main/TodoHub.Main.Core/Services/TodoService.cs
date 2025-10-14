@@ -23,24 +23,28 @@ namespace TodoHub.Main.Core.Services
             _todoCacheService = todoCacheService;
         }
         // add todo 
-        public async Task<Result<CreateTodoDTO>> AddTodoAsync(CreateTodoDTO todo, Guid OwnerId)
+        public async Task<Result<TodoDTO>> AddTodoAsync(CreateTodoDTO todo, Guid OwnerId)
         {
             ValidationResult res = _createvalidator.Validate(todo);
             if (!res.IsValid)
             {
-                return Result<CreateTodoDTO>.Fail("incorrect data entry");
+                return Result<TodoDTO>.Fail("Incorrect data entry");
             }
-            await _todoRepository.AddTodoAsyncRepo(todo, OwnerId);
+            var createdTodo = await _todoRepository.AddTodoAsyncRepo(todo, OwnerId);
             await _todoCacheService.DeleteCache(OwnerId);
-            return Result<CreateTodoDTO>.Ok(todo);
+            return Result<TodoDTO>.Ok(createdTodo);
         }
 
         // delete todo
-        public async Task<Result<bool>> DeleteTodoAsync(Guid id, Guid OwnerId)
+        public async Task<Result<Guid>> DeleteTodoAsync(Guid id, Guid OwnerId)
         {
-            await _todoRepository.DeleteTodoAsyncRepo(id, OwnerId);
+            var res = await _todoRepository.DeleteTodoAsyncRepo(id, OwnerId);
+            if (res == null)
+            {
+                return Result<Guid>.Fail("Error deleting todo");
+            }
             await _todoCacheService.DeleteCache(OwnerId);
-            return Result<bool>.Ok(true);
+            return Result<Guid>.Ok(res.Value);
         }
 
         // get todo by id
@@ -71,16 +75,16 @@ namespace TodoHub.Main.Core.Services
             return Result<List<TodoDTO>>.Ok(todos, "Todos from db");
         }
         // update todo
-        public async Task<Result<UpdateTodoDTO>> UpdateTodoAsync(UpdateTodoDTO todo, Guid OwnerId, Guid TodoId)
+        public async Task<Result<TodoDTO>> UpdateTodoAsync(UpdateTodoDTO todo, Guid OwnerId, Guid TodoId)
         {
             ValidationResult res = _updatevalidator.Validate(todo);
             if (!res.IsValid)
             {
-                return Result<UpdateTodoDTO>.Fail("Incorrect data entry");
+                return Result<TodoDTO>.Fail("Incorrect data entry");
             }
-            await _todoRepository.UpdateTodoAsyncRepo(todo, OwnerId, TodoId);
+            var updatedTodo = await _todoRepository.UpdateTodoAsyncRepo(todo, OwnerId, TodoId);
             await _todoCacheService.DeleteCache(OwnerId);
-            return Result<UpdateTodoDTO>.Ok(todo);
+            return Result<TodoDTO>.Ok(updatedTodo);
         }
     }
 }

@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using TodoHub.Main.Core.Common;
 using TodoHub.Main.Core.DTOs.Request;
 using TodoHub.Main.Core.DTOs.Response;
 using TodoHub.Main.Core.Entities;
@@ -22,23 +21,25 @@ namespace TodoHub.Main.DataAccess.Repository
         }
 
         // Adding a todo 
-        public async Task AddTodoAsyncRepo(CreateTodoDTO todo, Guid OwnerId)
+        public async Task<TodoDTO> AddTodoAsyncRepo(CreateTodoDTO todo, Guid OwnerId)
         {
             var entity = _mapper.Map<TodoEntity>(todo);
             entity.OwnerId = OwnerId;
             await _context.Todos.AddAsync(entity);
             await _context.SaveChangesAsync();
+            var output = _mapper.Map<TodoDTO>(entity);
+            return output;
         }
 
         // Deleting todo
-        public async Task<bool> DeleteTodoAsyncRepo(Guid id, Guid OwnerId)
+        public async Task<Guid?> DeleteTodoAsyncRepo(Guid id, Guid OwnerId)
         {
             var todo = await _context.Todos.FirstOrDefaultAsync(t => t.Id == id && t.OwnerId == OwnerId);
-            if (todo == null) { return false; }
+            if (todo == null) { return null; }
 
             _context.Todos.Remove(todo);
             await _context.SaveChangesAsync();
-            return true;
+            return todo.Id;
         }
 
         //Deleting all todo in deleted user
@@ -68,7 +69,7 @@ namespace TodoHub.Main.DataAccess.Repository
         }
 
         // Update todo
-        public async Task UpdateTodoAsyncRepo(UpdateTodoDTO todo_to_update, Guid OwnerId, Guid TodoId)
+        public async Task<TodoDTO> UpdateTodoAsyncRepo(UpdateTodoDTO todo_to_update, Guid OwnerId, Guid TodoId)
         {
             var todo = await _context.Todos.FirstOrDefaultAsync(t => t.Id == TodoId && t.OwnerId == OwnerId);
 
@@ -86,6 +87,8 @@ namespace TodoHub.Main.DataAccess.Repository
 
             todo.UpdatedDate = DateTime.UtcNow;
             await _context.SaveChangesAsync();
+            var output = _mapper.Map<TodoDTO>(todo);
+            return output;
         }
     }
 }

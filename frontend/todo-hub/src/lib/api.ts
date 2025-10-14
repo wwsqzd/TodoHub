@@ -123,20 +123,53 @@ export const GetUsers = async () => {
 
 // fetch todos
 export const getUserTodos = async () => {
-  const res = await api.get(`${API_URL}/todos`, {withCredentials: true});
-  if (res.status !== 200) throw new Error("Error fetching todos")
-  return res.data;
-}
+  try {
+    const res = await api.get(`${API_URL}/todos`, {withCredentials: true});
+    return res.data;
+  } catch (err: unknown)
+  {
+    if (axios.isAxiosError(err)) {
+      const message = err.response?.data || "Error fetching todos";
+      throw new Error(message);
+    } else {
+      throw new Error("Unknown error");
+    }
+  }
+};
 
-export const createTodo = async (data: {title: string, description: string}) => {
-  const res = await api.post(`${API_URL}/todos/create`, data, {withCredentials: true});
-  if (res.status !== 201) throw new Error("Error creating todo")
-  return res.data;
-}
+// create todo
+export const createTodo = async (data: { title: string; description: string }) => {
+  try {
+    const res = await api.post(`${API_URL}/todos/create`, data, { withCredentials: true });
+    return res.data;
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      const message = err.response?.data?.message || "Error creating todo";
+      throw new Error(message);
+    } else {
+      throw new Error("Unknown error");
+    }
+  }
+};
 
+// get todo
 export const getTodo = async (id: string) => {
   const res = await api.get(`${API_URL}/todos/${id}`, {withCredentials: true});
   if (res.status !== 200) throw new Error("Error fetching Todo")
+  return res.data;
+}
+
+// delete todo
+export const deleteTodo = async (id:string) => {
+  const res = await api.delete(`${API_URL}/todos/${id}`, {withCredentials: true});
+  if (res.status !== 200) throw new Error("Error deleting Todo")
+  return res.data;
+}
+
+// rewrite todo
+export const modifyTodo = async (id: string, data: {title: string, description: string, isCompleted: boolean}) => {
+  const res = await api.patch(`${API_URL}/todos/${id}`, data, {withCredentials: true});
+  if (res.status !== 200) throw new Error("Error modify todo")
   return res.data;
 }
 
