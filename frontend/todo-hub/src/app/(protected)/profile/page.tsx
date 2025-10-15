@@ -6,12 +6,8 @@ import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
 import { CiUser } from "react-icons/ci";
 import LoadingUI from "@/components/ui/LoadingUI";
-
-type Profile = {
-    name: string;
-    email: string;
-    IsAdmin: boolean;
-};
+import { Profile } from "@/types";
+// import ButtonUI from "@/components/ui/ButtonUI";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile>();
@@ -20,67 +16,69 @@ export default function ProfilePage() {
   const { accessToken, setAccessToken } = useAuth();
 
   useEffect(() => {
-  const fetchData = async () => {
-    if (!accessToken) {
+    const fetchData = async () => {
+      if (!accessToken) {
         return;
-    }
-    try {
+      }
+      try {
         const res = await getMe();
         setProfile(res.value);
         setLoading(false);
-
-    } catch (err: unknown) { 
-        if (axios.isAxiosError(err))
-        {
-            if (err.response?.status === 409) {
-                return;
-            }
-        }  
-      if (err instanceof Error) {
-        setError(err.message || "An unexpected error occurred");
-      } else {
-        setError("Unknown error");
+      } catch (err: unknown) {
+        if (axios.isAxiosError(err)) {
+          if (err.response?.status === 409) {
+            return;
+          }
+        }
+        if (err instanceof Error) {
+          setError(err.message || "An unexpected error occurred");
+        } else {
+          setError("Unknown error");
+        }
       }
+    };
+
+    fetchData();
+  }, [accessToken, setAccessToken]);
+
+  const handleLogout = async () => {
+    try {
+      await logOut();
+      setAccessToken(null);
+      document.cookie =
+        "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      setProfile(undefined);
+      window.location.href = "/auth/login";
+    } catch (err) {
+      console.error("Logout failed:", err);
     }
   };
 
-  fetchData();
-}, [accessToken, setAccessToken]);
-
-    const handleLogout = async () => 
-    {
-        try {
-            await logOut();
-            setAccessToken(null);
-            document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"; 
-            setProfile(undefined);
-            window.location.href = "/auth/login";
-
-        } catch (err) 
-        {
-            console.error("Logout failed:", err);
-        }
-    }
-
   return (
-        <div className="min-h-screen flex flex-col items-center">
+    <div className="min-h-screen flex flex-col items-center">
       {error && <p className="text-red-500">{error}</p>}
       {loading ? (
         <LoadingUI />
       ) : profile ? (
         <div className="bg-white rounded shadow p-6 w-full max-w-md flex flex-col items-center justify-center m-10">
-            <h1 className="mb-6 text-2xl font-bold">Account Profile</h1>
-            <div className="w-[70px] h-[70px] ">
-                <CiUser className="w-full h-full text-gray-400"/>
-            </div>
-            <div className="w-full flex flex-col gap-2 mt-4">
-                <p className="text-left text-sm">Name: {profile.name}</p>
-                <p className="text-left text-sm">Email: {profile.email}</p>
-                <p className="text-left text-sm">Admin: {profile.IsAdmin ? "No" : "Yes"}</p>
-            </div>
-          <button className="mt-4 bg-red-800 text-white rounded py-2 px-4 font-semibold cursor-pointer" onClick={handleLogout}>
-            Log out 
-            </button>
+          <h1 className="mb-6 text-2xl font-bold">Account Profile</h1>
+          <div className="w-[70px] h-[70px] ">
+            <CiUser className="w-full h-full text-gray-400" />
+          </div>
+          <div className="w-full flex flex-col gap-2 mt-4">
+            <p className="text-left text-sm">Name: {profile.name}</p>
+            <p className="text-left text-sm">Email: {profile.email}</p>
+            <p className="text-left text-sm">
+              Admin: {profile.IsAdmin ? "No" : "Yes"}
+            </p>
+          </div>
+          <button
+            className="mt-4 bg-red-800 text-white rounded py-2 px-4 font-semibold cursor-pointer"
+            onClick={handleLogout}
+          >
+            Log out
+          </button>
+          {/* <ButtonUI color="red" text="Log Out" w="18" h="11" /> */}
         </div>
       ) : (
         <p>No profile data found.</p>

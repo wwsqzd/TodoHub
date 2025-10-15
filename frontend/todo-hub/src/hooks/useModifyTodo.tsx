@@ -1,11 +1,14 @@
+import { modifyTodo } from "@/lib/api";
 import { useState } from "react";
-import { createTodo } from "@/lib/api";
 
-export function useCreateTodo() {
+export function useModifyTodo() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const create = async (data: { title: string; description: string }) => {
+  const modify = async (
+    id: string,
+    data: { title: string; description: string; isCompleted: boolean }
+  ) => {
     setError(null);
     setLoading(true);
 
@@ -16,17 +19,18 @@ export function useCreateTodo() {
       );
       return;
     }
+
     try {
-      const newTodo = await createTodo(data);
-      return newTodo.value;
+      const res = await modifyTodo(id, data);
+      if (res) {
+        return res.value;
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
       }
-    } finally {
-      setLoading(false);
     }
   };
 
-  return { create, loading, error };
+  return { modify, error, loading };
 }
