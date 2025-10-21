@@ -1,5 +1,4 @@
-﻿
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Serilog;
 using System.Security.Cryptography;
 using System.Text;
@@ -37,18 +36,17 @@ namespace TodoHub.Main.Core.Services
             // Ich gebe dem Benutzer den normalen Token zurück und speichere den Hash in der Datenbank.
             var token = GenerateRefreshToken();
             var hash_token = HashToken(token);
-            Log.Information($"TOKEN HASH LOGIN in AddRefreshToken: {hash_token}");
             await _refreshTokenRepository.AddRefreshTokenRepo(hash_token, UserId);
             return token;
         }
 
         public async Task<string?> RefreshToken(string old_refresh_token, Guid userId)
         {
-            Log.Information($"Token in RefreshToken method: {old_refresh_token}");
+            //Log.Information($"Token in RefreshToken method: {old_refresh_token}");
             var old_hash_token = HashToken(old_refresh_token);
-            Log.Information($"Token Hash in RefreshToken method: {old_hash_token}");
+            //Log.Information($"Token Hash in RefreshToken method: {old_hash_token}");
 
-            var old_token = await _refreshTokenRepository.GetToken(old_hash_token);
+            var old_token = await _refreshTokenRepository.GetTokenRepo(old_hash_token);
             if (old_token != null && old_token.IsActive)
             {
                 var new_token = GenerateRefreshToken();
@@ -94,11 +92,22 @@ namespace TodoHub.Main.Core.Services
         public async Task RevokeRefreshToken(string token)
         {
             var hash_token = HashToken(token);
-            var temp = await _refreshTokenRepository.GetToken(hash_token);
+            var temp = await _refreshTokenRepository.GetTokenRepo(hash_token);
             if (temp != null && temp.IsActive)
             {
                 await _refreshTokenRepository.RevokeRefreshTokenRepo(hash_token);
             }
+        }
+
+        public async Task<bool> isRefreshTokenValid(string token)
+        {
+            var hash_token = HashToken(token);
+            bool valid = await _refreshTokenRepository.isRefreshTokenValidRepo(hash_token);
+            if (valid)
+            {
+                return true;
+            }
+            return false;
         }
     }
 }

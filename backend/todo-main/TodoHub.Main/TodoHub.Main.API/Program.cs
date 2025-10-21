@@ -81,6 +81,7 @@ try
 
     // services
     builder.Services.AddScoped<IUserService, UserService>();
+    builder.Services.AddScoped<IJwtService, JwtService>();
     builder.Services.AddScoped<IPasswordService, PasswordService>();
     builder.Services.AddScoped<IUserRepository, UserRepository>();
     builder.Services.AddScoped<AbstractValidator<RegisterDTO>, RegisterDTOValidator>();
@@ -108,7 +109,6 @@ try
     // every 12 hours
     builder.Services.AddHostedService<RefreshTokensHostedService>();
     builder.Services.AddScoped<IRefreshTokensCleanerService, RefreshTokensCleanerService>();
-    builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
 
     //redis
@@ -123,7 +123,11 @@ try
     {
         options.AddPolicy("AllowFrontend",
             builder => builder
-                .WithOrigins("http://localhost:3000")
+                .WithOrigins(
+                "http://localhost:3000",
+                "http://192.168.208.1:3000",
+                "http://10.0.0.183:3000"
+                )
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .AllowCredentials());
@@ -171,18 +175,6 @@ try
     //  rate limiting
     builder.Services.AddRateLimiter(options =>
     {
-        //options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
-        //{
-        //    var clientIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-
-        //    return RateLimitPartition.GetFixedWindowLimiter(clientIp, _ => new FixedWindowRateLimiterOptions
-        //    {
-        //        PermitLimit = 5,
-        //        Window = TimeSpan.FromSeconds(10),
-        //        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-        //        QueueLimit = 2
-        //    });
-        //});
         options.AddPolicy("LoginPolicy", HttpContext =>
         {
             var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "uknown";

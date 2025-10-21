@@ -67,6 +67,7 @@ namespace TodoHub.Main.DataAccess.Repository
 
         }
 
+        // is user admin?
         public async Task<bool> IsUserAdminRepo(Guid id)
         {
             var user = await _context.Users.FirstOrDefaultAsync(user => user.Id == id);

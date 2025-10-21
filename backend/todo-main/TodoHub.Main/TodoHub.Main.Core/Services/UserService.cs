@@ -1,36 +1,39 @@
 ﻿using FluentValidation;
 using FluentValidation.Results;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using Serilog;
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using TodoHub.Main.Core.Common;
 using TodoHub.Main.Core.DTOs.Request;
 using TodoHub.Main.Core.DTOs.Response;
 using TodoHub.Main.Core.Entities;
 using TodoHub.Main.Core.Interfaces;
-using Zxcvbn;
+using TodoHub.Main.DataAccess.Interfaces;
 
 namespace TodoHub.Main.Core.Services
 {
     public class UserService : IUserService
     {
-        private readonly IConfiguration _config;
         private readonly IPasswordService _passwordService;
+        private readonly IJwtService _jwtService;
         private readonly IUserRepository _userRepository;
         private readonly AbstractValidator<RegisterDTO> _register_validator;
         private readonly AbstractValidator<LoginDTO> _login_validator;
+        private readonly IRefreshTokenRepository _refreshTokenRepository;
 
-        public UserService(IPasswordService passwordService, IUserRepository userRepository, AbstractValidator<RegisterDTO> register_validator, AbstractValidator<LoginDTO> login_validator, IConfiguration config)
+        public UserService(
+            IPasswordService passwordService,
+            IJwtService jwtService,
+            IUserRepository userRepository, 
+            AbstractValidator<RegisterDTO> register_validator, 
+            AbstractValidator<LoginDTO> login_validator, 
+            IRefreshTokenRepository refreshTokenRepository
+            )
         {
-
             _passwordService = passwordService;
+            _jwtService = jwtService;
             _userRepository = userRepository;
             _register_validator = register_validator;
             _login_validator = login_validator;
-            _config = config;
+            _refreshTokenRepository = refreshTokenRepository;
         }
 
         // register user
@@ -60,6 +63,7 @@ namespace TodoHub.Main.Core.Services
         // login
         public async Task<(string token, Result<LoginResponseDTO>)> LoginUserAsync(LoginDTO login_user)
         {
+            // login validator
             ValidationResult resValidator = _login_validator.Validate(login_user);
             if (!resValidator.IsValid)
             {
@@ -77,35 +81,24 @@ namespace TodoHub.Main.Core.Services
             if (!isPasswordValid)
                 return ("", Result<LoginResponseDTO>.Fail("Invalid password"));
 
-            // jwt claims
-            var claims = new[]
-            {
-            new Claim(ClaimTypes.Name, user.Name),
-            new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin" : "User"),
-            new Claim("UserId", user.Id.ToString())
-            };
-            // secret key for jwt
-            var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            // generate token
-            var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(_config["Jwt:Expire"]!)),
-                signingCredentials: creds
-            );
+
+            var token = _jwtService.getJwtToken(user);
+            
 
             var refreshtoken = await _passwordService.AddRefreshToken(user.Id);
+
+            if (refreshtoken == null)
+            {
+                return (string.Empty, Result<LoginResponseDTO>.Fail("Refresh Token is invalid"));
+            }
 
             var response = new LoginResponseDTO
             {
                 Token = new JwtSecurityTokenHandler().WriteToken(token),
                 ExpiresAt = token.ValidTo,
             };
-            Log.Information($"Output Data in Login. Refresh token: {refreshtoken}, accesstoken: {response.Token}");
+
             return (refreshtoken, Result<LoginResponseDTO>.Ok(response));
 
 
@@ -114,6 +107,11 @@ namespace TodoHub.Main.Core.Services
         // refresh token 
         public async Task<(string token, Result<LoginResponseDTO>)> RefreshLoginAsync(string old_refresh_token)
         {
+            // validation
+            var isValid = await _passwordService.isRefreshTokenValid(old_refresh_token);
+            if (!isValid) return (string.Empty, Result<LoginResponseDTO>.Fail("Refresh token is Invalid"));
+
+            // user id in token
             var userIdInToken = await _passwordService.GetUserId(old_refresh_token);
             if (userIdInToken == null) {
                 return (string.Empty, Result<LoginResponseDTO>.Fail("UserID wird im Token nicht gefunden "));
@@ -123,28 +121,9 @@ namespace TodoHub.Main.Core.Services
             {
                 return (string.Empty, Result<LoginResponseDTO>.Fail("Der Benutzer mit dieser ID wurde nicht gefunden."));
             }
-           
-            // jwt claims
-            var claims = new[]
-            {
-            new Claim(ClaimTypes.Name, user.Name),
-            new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin" : "User"),
-            new Claim("UserId", user.Id.ToString())
-            };
-            // secret key for jwt
-            var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            // generate
-            var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(_config["Jwt:Expire"]!)),
-                signingCredentials: creds
-            );
-            
+            var token = _jwtService.getJwtToken(user);
+
             var refreshtoken = await _passwordService.RefreshToken(old_refresh_token, userIdInToken.Value);
             
             
@@ -158,7 +137,7 @@ namespace TodoHub.Main.Core.Services
                 Token = new JwtSecurityTokenHandler().WriteToken(token),
                 ExpiresAt = token.ValidTo,
             };
-            Log.Information($"Output data in refresh Login: refresh token {refreshtoken}, access token: {response.Token}");
+
             return (refreshtoken, Result<LoginResponseDTO>.Ok(response));
         }
         
@@ -182,15 +161,16 @@ namespace TodoHub.Main.Core.Services
         }
 
         // delete user
-        public async Task<Result<bool>> DeleteUserAsync(Guid id)
+        public async Task<Result<Guid>> DeleteUserAsync(Guid id)
         {
             var user = await _userRepository.GetUserByIdAsyncRepo(id);
             if (user == null)
             {
-                return Result<bool>.Fail("User does not exist");
+                return Result<Guid>.Fail("User does not exist");
             }
             await _userRepository.DeleteUserAsyncRepo(id);
-            return Result<bool>.Ok(true);
+            await _refreshTokenRepository.DeleteRefreshTokensByUserRepo(id);
+            return Result<Guid>.Ok(id);
         }
 
         // get profile

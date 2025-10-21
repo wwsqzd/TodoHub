@@ -8,7 +8,7 @@ using TodoHub.Main.Core.Interfaces;
 namespace TodoHub.Main.API.Controllers
 {
     // Authentication and authorization controller
-    [Route("auth")]
+    [Route("/api/auth")]
     [ApiController]
     public class AuthController : ControllerBase
     {
@@ -25,22 +25,29 @@ namespace TodoHub.Main.API.Controllers
         public async Task<IActionResult> Login([FromBody] LoginDTO dto)
         {
             var (token, response)= await _userService.LoginUserAsync(dto);
-
-            // Refresh Token
-            //Response.Cookies.Delete("refreshToken");
-            Response.Cookies.Append("refreshToken", token, new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true, // only in dev
-                SameSite = SameSiteMode.None,
-                Path = "/",
-                Expires = DateTime.UtcNow.AddDays(7)
-            });
-
+            
             if (!response.Success)
             {
-                return Unauthorized(new { message = response.Error });
+                return Unauthorized(response);
             }
+
+            
+            if (token != null)
+            {
+                //Logger
+                Log.Information($"The user {dto.Email} has logged in.");
+
+                // Refresh Token
+                Response.Cookies.Append("refreshToken", token, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.None,
+                    Path = "/",
+                    Expires = DateTime.UtcNow.AddDays(7)
+                });
+            }
+
             // return
             return Ok(response);
         }
@@ -55,6 +62,11 @@ namespace TodoHub.Main.API.Controllers
             {
                 return Conflict(result);
             }
+            // Logger 
+            if (result.Success)
+            {
+                Log.Information($"The user {result.Value.Email} has registered in.");
+            }
             return Created();
         }
 
@@ -65,25 +77,33 @@ namespace TodoHub.Main.API.Controllers
         {
             if (!Request.Cookies.TryGetValue("refreshToken", out var refreshToken))
             {
-                Log.Error("Refresh token not found");
-                return BadRequest(new { error = "Refresh token not found", code = 123 });
+                //Logger
+                Log.Error("Refresh token not found in Refresh ");
+                return Unauthorized("Refresh token not found");
             }
-            // logger
-            Log.Information($"Data in Refresh Login. Refresh token: {refreshToken}");
+            
             var (token, response) = await _userService.RefreshLoginAsync(refreshToken);
 
             if (!response.Success)
             {
-                Log.Error(response.Error);
+                // Logger
+                Log.Error($"Error in refresh token service. Error message: {response.Error}");
+                Response.Cookies.Append("refreshToken", "", new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    Path = "/",
+                    Expires = DateTime.UtcNow.AddDays(-1),
+                    SameSite = SameSiteMode.None
+                });
                 return Unauthorized(response);
             }
 
             // new Refresh Token
-            Response.Cookies.Delete("refreshToken");
             Response.Cookies.Append("refreshToken", token, new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true,  // only in dev
+                Secure = true,  
                 SameSite = SameSiteMode.None,
                 Path = "/",
                 Expires = DateTime.UtcNow.AddDays(7)
@@ -98,6 +118,8 @@ namespace TodoHub.Main.API.Controllers
         {
             if (!Request.Cookies.TryGetValue("refreshToken", out var refreshToken))
             {
+                //Logger
+                Log.Error("Refresh token not found in Log Out ");
                 return Unauthorized("Refresh token not found");
             }
             var result = await _userService.LogoutUserAsync(refreshToken);
@@ -108,7 +130,7 @@ namespace TodoHub.Main.API.Controllers
             Response.Cookies.Append("refreshToken", "", new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true, // false for dev
+                Secure = true, 
                 Path = "/",
                 Expires = DateTime.UtcNow.AddDays(-1),
                 SameSite = SameSiteMode.None

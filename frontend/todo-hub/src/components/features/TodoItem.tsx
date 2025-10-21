@@ -1,10 +1,10 @@
-import { BsTrash } from "react-icons/bs";
 import { PiPencil } from "react-icons/pi";
 import { MdOutlineCheckBoxOutlineBlank } from "react-icons/md";
 import { MdOutlineCheckBox } from "react-icons/md";
 import { useDeleteTodo } from "@/hooks/useDeleteTodo";
 import { Todo } from "@/types";
 import { useModifyTodo } from "@/hooks/useModifyTodo";
+import DeleteButtonUI from "../ui/DeleteButtonUI";
 
 type Props = {
   todo: Todo;
@@ -89,11 +89,7 @@ export default function TodoItem({ todo, onDelete, onModify, onEdit }: Props) {
             onClick={() => onEdit(todo)}
             className="cursor-pointer hover:text-blue-600 w-5 h-5"
           />
-
-          <BsTrash
-            onClick={() => handleDelete(todo.id)}
-            className="cursor-pointer hover:text-red-700 w-4 h-4"
-          />
+          <DeleteButtonUI handleDelete={() => handleDelete(todo.id)} />
         </div>
       </div>
     </div>

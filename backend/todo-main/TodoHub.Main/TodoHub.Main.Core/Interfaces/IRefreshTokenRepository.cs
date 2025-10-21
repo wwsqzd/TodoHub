@@ -9,7 +9,9 @@ namespace TodoHub.Main.DataAccess.Interfaces
         Task RefreshTokenRepo(string refreshToken, string newToken, Guid userId);
         Task RevokeRefreshTokenRepo(string refreshToken);
         Task DeleteOldTokensRepo();
-        Task<RefreshTokenEntity?> GetToken(string refreshToken);
+        Task<RefreshTokenEntity?> GetTokenRepo(string refreshToken);
         Task<Guid?> GetUserIdRepo(string hash_token);
+        Task<bool> DeleteRefreshTokensByUserRepo(Guid userId);
+        Task<bool> isRefreshTokenValidRepo(string refreshToken);
     }
 }

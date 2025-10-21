@@ -1,5 +1,11 @@
 "use client";
-import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useEffect,
+} from "react";
 import { fetchIsAdmin } from "@/lib/api";
 
 type AuthContextType = {
@@ -21,20 +27,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   useEffect(() => {
-  const checkToken = async () => {
-    const token = document.cookie
-      .split("; ")
-      .find(row => row.startsWith("accessToken="))
-      ?.split("=")[1] || null;
-      if (token)
-      {
-        await fetchIsAdmin().then(res => {
-            setIsAdmin(res.value);
-        });
+    const checkToken = async () => {
+      try {
+        const token =
+          document.cookie
+            .split("; ")
+            .find((row) => row.startsWith("accessToken="))
+            ?.split("=")[1] || null;
+
+        if (token) {
+          const res = await fetchIsAdmin();
+          setIsAdmin(res.value);
+          setAccessToken(token);
+        } else {
+          setAccessToken(null);
+          setIsAdmin(false);
+        }
+      } catch (err) {
+        console.error("Auth check failed:", err);
       }
-    setAccessToken(token);
-  };
-  checkToken(); 
+    };
+    checkToken();
   }, []);
 
   return (

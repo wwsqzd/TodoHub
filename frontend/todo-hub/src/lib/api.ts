@@ -1,5 +1,5 @@
 import axios from "axios";
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://localhost:7098";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://localhost:7098/api";
 
 
 
@@ -28,17 +28,27 @@ api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // if 401 haven't tried again yet
+    if (
+      error.response?.status === 401 && 
+      !originalRequest._retry && 
+      !originalRequest.url.includes("/auth/login") &&
+      !originalRequest.url.includes("/auth/register") &&
+      !originalRequest.url.includes("/auth/refresh")
+    ) {
       originalRequest._retry = true;
       try {
         const res = await refreshToken();
         document.cookie = `accessToken=${res.value.token}; path=/;`;
         originalRequest.headers["Authorization"] = `Bearer ${res.value.token}`;
-        return api.request(originalRequest); // retry original request
+        return api.request(originalRequest); // retry
       } catch (err) {
+        document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        window.location.href = "/auth/login"; 
         return Promise.reject(err);
       }
     }
+
     return Promise.reject(error);
   }
 );
@@ -56,8 +66,7 @@ interface LoginResponse {
 
 // Login function
 export const login = async (data: { email: string; password: string }): Promise<LoginResponse> => {
-  const res = await api.post(`${API_URL}/auth/login`, data, { withCredentials: true });
-
+  const res = await api.post(`${API_URL}/auth/login`, data, { withCredentials: true});
   if (res.status === 200 && res.data.value?.token) {
     document.cookie = `accessToken=${res.data.value.token}; path=/;`;
     return res.data;
@@ -108,17 +117,26 @@ export const fetchIsAdmin = async () => {
   return res.data;
 }
 
-// fetch users for admin
+// fetch users (admin)
 export const GetUsers = async () => {
   const res = await api.get(`${API_URL}/users`, {withCredentials: true});
   if (res.status !== 200) throw new Error("Error fetching users")
   return res.data;
 }
 
+// delete user (admin)
+export const DeleteUser = async (id: string) => {
+  const res = await api.delete(`${API_URL}/user/delete/${id}`, {withCredentials: true});
+  if (res.status !== 200) throw new Error("Error deleting user");
+  return res.data;
+} 
+
+
+
+
+
 
 // todos
-
-
 
 
 // fetch todos

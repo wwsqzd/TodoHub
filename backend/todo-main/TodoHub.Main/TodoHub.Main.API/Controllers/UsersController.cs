@@ -7,7 +7,7 @@ using TodoHub.Main.Core.Interfaces;
 namespace TodoHub.Main.API.Controllers
 {
     // users controller
-    [Route("/")]
+    [Route("/api/")]
     [ApiController]
     public class UsersController : ControllerBase
     {
@@ -42,6 +42,7 @@ namespace TodoHub.Main.API.Controllers
             return Ok(user);
         }
 
+        // get users
         // only allowed if the user is an administrator
         [Authorize(Roles = "Admin")]
         [HttpGet("users")]
@@ -55,6 +56,7 @@ namespace TodoHub.Main.API.Controllers
             return Ok(users);
         }
 
+        //get profile
         // only allowed if the user is an administrator
         [Authorize(Roles = "Admin")]
         [HttpGet("profile/{id}")]
@@ -69,7 +71,7 @@ namespace TodoHub.Main.API.Controllers
         }
 
 
-
+        // delete user 
         // only allowed if the user is an administrator
         [Authorize(Roles = "Admin")]
         [HttpDelete("user/delete/{id}")]
@@ -80,16 +82,18 @@ namespace TodoHub.Main.API.Controllers
                 return Unauthorized();
 
             var result = await _userService.DeleteUserAsync(id);
+
             var dto = new MessageEnvelope{ 
                 Command = "Clean Todos By User", 
                 UserId = id 
             };
             _queueProducer.Send(dto);
+
             if (!result.Success)
             {
-                return NotFound();
+                return Conflict();
             }
-            return NoContent();
+            return Ok(result);
 
         }
 

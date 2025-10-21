@@ -16,6 +16,7 @@ namespace TodoHub.Main.DataAccess.Repository
             _context = context;
         }
 
+        // add refresh token
         public async Task AddRefreshTokenRepo(string refreshToken, Guid userId)
         {
             var entity = new RefreshTokenEntity
@@ -27,6 +28,7 @@ namespace TodoHub.Main.DataAccess.Repository
             await _context.SaveChangesAsync();
         }
 
+        // delete old tokens
         public async Task DeleteOldTokensRepo()
         {
             var tomorrow = DateTime.UtcNow.AddDays(1);
@@ -36,7 +38,8 @@ namespace TodoHub.Main.DataAccess.Repository
             Log.Information("Old tokens deleted");
         }
 
-        public async Task<RefreshTokenEntity?> GetToken(string refreshToken)
+        // get token
+        public async Task<RefreshTokenEntity?> GetTokenRepo(string refreshToken)
         {
             var res = await _context.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == refreshToken);
             if (res == null)
@@ -46,12 +49,14 @@ namespace TodoHub.Main.DataAccess.Repository
             return res;
         }
 
+        // get User id by refresh token
         public async Task<Guid?> GetUserIdRepo(string hash_token)
         {
             var res = await _context.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == hash_token);
             return res?.UserId;
         }
 
+        // refresh old token
         public async Task RefreshTokenRepo(string refreshToken, string newToken, Guid userId)
         {
             // revoke old token
@@ -82,6 +87,24 @@ namespace TodoHub.Main.DataAccess.Repository
             }
             res.Revoked = DateTime.UtcNow;
             await _context.SaveChangesAsync();
+        }
+
+        // delete refresh tokens by user
+        public async Task<bool> DeleteRefreshTokensByUserRepo(Guid userId)
+        {
+            var refreshTokens = await _context.RefreshTokens.Where(t => t.UserId == userId).ToListAsync();
+            _context.RemoveRange(refreshTokens);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        // is Refresh Token valid?
+        public async Task<bool> isRefreshTokenValidRepo(string refreshToken)
+        {
+            var token = await _context.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash.Equals(refreshToken));
+            if (token == null) return false;
+            if (token.Expires <= DateTime.UtcNow) return false;
+            return true;
         }
     }
 }

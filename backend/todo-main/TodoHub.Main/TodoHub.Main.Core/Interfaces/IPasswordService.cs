@@ -12,6 +12,6 @@ namespace TodoHub.Main.Core.Interfaces
         Task RevokeRefreshToken(string token);
         string HashToken(string token);
         Task<Guid?> GetUserId(string token);
-
+        Task<bool> isRefreshTokenValid(string token);
     }
 }

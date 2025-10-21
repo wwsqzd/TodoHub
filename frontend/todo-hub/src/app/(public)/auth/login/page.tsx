@@ -18,40 +18,43 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
-        const response = await login({ email, password });
-        setAccessToken(response.value.token);
-        setEmail("");
-        setPassword("");
-        window.location.href = "/profile"; // Redirect to home page
+      const response = await login({ email, password });
+      setAccessToken(response.value.token);
+      setEmail("");
+      setPassword("");
+      window.location.href = "/profile"; // Redirect to home page
     } catch (err: unknown) {
-        if (axios.isAxiosError(err)) {
-            if (err.response?.status === 400) {
-                setError("Invalid email or password");
-                return;
-            }
-            if (err.response?.status === 500) {
-                setError("Server error. Please try again later.");
-                return;
-            }
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 401) {
+          setError("Invalid email or password");
+          return;
         }
-        if (err instanceof Error)
+        if (err.response?.status === 500) {
+          setError("Server error. Please try again later.");
+          return;
+        }
+      }
+      if (err instanceof Error)
         setError(err.message || "An unexpected error occurred");
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
   return (
     <div className="flex flex-col items-center">
       <h1 className="mb-6 text-2xl font-bold">Login</h1>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full max-w-xs">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-4 w-full max-w-xs"
+      >
         <input
           type="email"
           placeholder="Email"
           autoComplete="email"
           required
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
           className="border rounded px-3 py-2"
         />
         <input
@@ -60,22 +63,28 @@ export default function LoginPage() {
           autoComplete="current-password"
           required
           value={password}
-          onChange={e => setPassword(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
           className="border rounded px-3 py-2"
         />
         <div className="text-sm text-gray-600 mb-4 text-center">
-            <p>
+          <p>
             Don&apos;t have an account?{" "}
-            <Link href="/auth/register" className="text-blue-600 hover:underline">
-                Sign up
+            <Link
+              href="/auth/register"
+              className="text-blue-600 hover:underline"
+            >
+              Sign up
             </Link>
-            </p>
+          </p>
         </div>
-        <button type="submit" className="bg-blue-600 text-white rounded py-2 font-semibold cursor-pointer">
+        <button
+          type="submit"
+          className="bg-blue-600 text-white rounded py-2 font-semibold cursor-pointer"
+        >
           {loading ? "Loading..." : "Login"}
         </button>
         <div className="text-sm text-gray-600 text-center">
-            {error && <p className="text-red-500 mb-2">{error}</p>}
+          {error && <p className="text-red-500 mb-2">{error}</p>}
         </div>
       </form>
     </div>

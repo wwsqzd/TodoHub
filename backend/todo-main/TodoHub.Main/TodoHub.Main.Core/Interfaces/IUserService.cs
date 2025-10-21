@@ -12,7 +12,7 @@ namespace TodoHub.Main.Core.Interfaces
         Task<UserEntity?> GetUserByIdAsync(Guid id);
         Task<UserEntity?> GetUserByEmailAsync(string email);
         Task<Result<RegisterDTO>> AddUserAsync(RegisterDTO user);
-        Task<Result<bool>> DeleteUserAsync(Guid id);
+        Task<Result<Guid>> DeleteUserAsync(Guid id);
         Task<(string token, Result<LoginResponseDTO>)> LoginUserAsync(LoginDTO user);
         Task<Result<bool>> LogoutUserAsync(string refresh_token);
         Task<(string token, Result<LoginResponseDTO>)> RefreshLoginAsync(string old_refresh_token);

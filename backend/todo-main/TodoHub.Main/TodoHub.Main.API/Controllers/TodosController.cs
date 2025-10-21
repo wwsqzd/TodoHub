@@ -6,7 +6,7 @@ using TodoHub.Main.Core.Interfaces;
 
 namespace TodoHub.Main.API.Controllers
 {
-    [Route("/todos")]
+    [Route("/api/todos")]
     [ApiController]
     [Authorize]
     public class TodosController : ControllerBase
