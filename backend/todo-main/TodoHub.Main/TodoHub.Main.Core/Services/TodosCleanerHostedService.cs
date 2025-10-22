@@ -1,5 +1,4 @@
-﻿
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -18,20 +17,21 @@ namespace TodoHub.Main.Core.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            // Create a RabbitMQ connection factory pointing to localhost
             var factory = new ConnectionFactory() { HostName = "localhost" };
             using var connection = await factory.CreateConnectionAsync();
             using var channel = await connection.CreateChannelAsync();
 
-            await channel.QueueDeclareAsync("todo_queue", false, false, false, null);
+            await channel.QueueDeclareAsync("todo_queue", false, false, false, null);  // Declare a queue named "todo_queue"
 
             var consumer = new AsyncEventingBasicConsumer(channel);
-            consumer.ReceivedAsync += async (ch, ea) =>
+            consumer.ReceivedAsync += async (ch, ea) => // Event triggered when a new message arrives in the queue
             {
                 var message = Encoding.UTF8.GetString(ea.Body.ToArray());
-                var userId = Guid.Parse(message);
-                using var scope = _scopeFactory.CreateScope();
+                var userId = Guid.Parse(message); // Parse the user ID from the message
+                using var scope = _scopeFactory.CreateScope(); // Create a new service scope to get scoped services
                 var todosService = scope.ServiceProvider.GetRequiredService<ITodosCleanerService>();
-                // Core Service
+                // Service
                 await todosService.CleanALlTodosByUser(userId);
             };
 

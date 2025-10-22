@@ -81,7 +81,7 @@ export default function ProfilePage() {
           {/* <ButtonUI color="red" text="Log Out" w="18" h="11" /> */}
         </div>
       ) : (
-        <p>No profile data found.</p>
+        <></>
       )}
     </div>
   );

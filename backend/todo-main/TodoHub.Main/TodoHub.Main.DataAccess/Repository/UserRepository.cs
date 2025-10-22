@@ -1,4 +1,6 @@
-﻿using AutoMapper;
+﻿// User Repository
+
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using TodoHub.Main.Core.DTOs.Request;
 using TodoHub.Main.Core.DTOs.Response;
@@ -19,6 +21,7 @@ namespace TodoHub.Main.DataAccess.Repository
             _mapper = mapper;
         }
 
+        // Add User 
         public async Task AddUserAsyncRepo(RegisterDTO user)
         {
             var entity = _mapper.Map<UserEntity>(user);
@@ -64,7 +67,6 @@ namespace TodoHub.Main.DataAccess.Repository
             var user = await _context.Users.FindAsync(id);
             var userDto = _mapper.Map<UserDTO>(user);
             return userDto;
-
         }
 
         // is user admin?

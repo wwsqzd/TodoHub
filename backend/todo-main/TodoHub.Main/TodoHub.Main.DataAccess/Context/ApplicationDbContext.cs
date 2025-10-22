@@ -1,5 +1,4 @@
-﻿
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using TodoHub.Main.Core.Entities;
 
 namespace TodoHub.Main.DataAccess.Context
@@ -12,6 +11,7 @@ namespace TodoHub.Main.DataAccess.Context
         public DbSet<RefreshTokenEntity> RefreshTokens { get; set; }
         public ApplicationDbContext (DbContextOptions<ApplicationDbContext> options) : base (options)
         {
+            // Promises that the database will be created
             Database.EnsureCreated();
         }
     }

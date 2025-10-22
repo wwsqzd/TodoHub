@@ -113,7 +113,8 @@ try
 
     //redis
     builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
-        ConnectionMultiplexer.Connect("localhost:6379"));
+        ConnectionMultiplexer.Connect("localhost:6379")
+    );
 
     // mapping
     builder.Services.AddAutoMapper(cfg => { cfg.AddProfile<MappingProfile>(); });

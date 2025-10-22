@@ -16,6 +16,7 @@ namespace TodoHub.Main.Core.Services
             _channel = channel;
         }
 
+        // Factory method to create a QueueProducer with a connection and channel
         public static async Task<QueueProducer> CreateAsync()
         {
             var factory = new ConnectionFactory() { HostName = "localhost" };
@@ -24,6 +25,7 @@ namespace TodoHub.Main.Core.Services
             return new QueueProducer(connection, channel);
         }
 
+        // Redirect to the correct HostedService depending on the message
         public void Send(MessageEnvelope brokerMessageDTO)
         {
             if (brokerMessageDTO.Command == "Clean Todos By User")

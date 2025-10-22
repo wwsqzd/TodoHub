@@ -1,4 +1,5 @@
-﻿
+﻿// Refresh Token Repository
+
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using TodoHub.Main.Core.Entities;
