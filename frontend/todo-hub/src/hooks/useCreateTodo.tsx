@@ -16,6 +16,13 @@ export function useCreateTodo() {
       );
       return;
     }
+    if (data.description.length > 300) {
+      setLoading(false);
+      setError(
+        "The length of thedescription must be no more than 300 characters."
+      );
+      return;
+    }
     try {
       const newTodo = await createTodo(data);
       return newTodo.value;

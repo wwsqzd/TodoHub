@@ -5,6 +5,8 @@ import { useDeleteTodo } from "@/hooks/useDeleteTodo";
 import { Todo } from "@/types";
 import { useModifyTodo } from "@/hooks/useModifyTodo";
 import DeleteButtonUI from "../ui/DeleteButtonUI";
+import gsap from "gsap";
+import { useRef } from "react";
 
 type Props = {
   todo: Todo;
@@ -17,7 +19,16 @@ export default function TodoItem({ todo, onDelete, onModify, onEdit }: Props) {
   const { delTodo } = useDeleteTodo();
   const { modify } = useModifyTodo();
 
+  const todoRef = useRef<HTMLDivElement>(null);
+
   const handleDelete = async (id: string) => {
+    await gsap.to(todoRef.current, {
+      scale: 0,
+      opacity: 0,
+      duration: 0.7,
+      ease: "back.in(1.7)",
+    });
+
     try {
       const res = await delTodo(id);
       if (res) {
@@ -44,6 +55,7 @@ export default function TodoItem({ todo, onDelete, onModify, onEdit }: Props) {
 
   return (
     <div
+      ref={todoRef}
       key={todo.id}
       className="max-w-xs w-full h-fit bg-white rounded-lg shadow-md p-6 flex flex-col justify-between gap-3 border border-gray-200 hover:shadow-lg transition-all"
     >

@@ -4,9 +4,14 @@ import TodosList from "@/components/features/TodosList";
 import WelcomePart from "@/components/features/WelcomePart";
 import LoadingUI from "@/components/ui/LoadingUI";
 import { getUserTodos } from "@/lib/api";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { Todo } from "@/types";
 import ModifyTodoModalWindow from "@/components/features/ModifyTodoModalWindow";
+
+import gsap from "gsap";
+import { Flip } from "gsap/Flip";
+
+gsap.registerPlugin(Flip);
 
 export default function Dashboard() {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -33,9 +38,31 @@ export default function Dashboard() {
     setShowModalCreate(true);
   };
 
+  const ConRef = useRef<HTMLDivElement>(null);
+  const flipState = useRef<Flip.FlipState | null>(null);
+
+  // with animation
   const handleDeleteTodo = (id: string) => {
+    if (!ConRef.current) return;
+    const todosElements = ConRef.current.querySelectorAll(
+      "div.break-inside-avoid"
+    );
+    flipState.current = Flip.getState(todosElements);
     setTodos((prev) => prev.filter((t) => t.id !== id));
   };
+
+  // animation
+  useLayoutEffect(() => {
+    if (flipState.current) {
+      Flip.from(flipState.current, {
+        duration: 0.6,
+        ease: "power1.inOut",
+        absolute: true,
+        stagger: 0.05,
+      });
+      flipState.current = null;
+    }
+  }, [todos]);
 
   const handleModifyTodo = (updatedTodo: Todo) => {
     setTodos((prevTodos) =>
@@ -75,6 +102,7 @@ export default function Dashboard() {
         <LoadingUI />
       ) : todos && todos.length > 0 ? (
         <TodosList
+          ref={ConRef}
           todos={todos}
           handleButton={handleButton}
           onDelete={handleDeleteTodo}

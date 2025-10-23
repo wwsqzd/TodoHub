@@ -22,7 +22,6 @@ export default function StartPart() {
     () => {
       if (text.current && containerRef.current) {
         const split = SplitText.create(text.current, { type: "words" });
-        const tl = gsap.timeline();
         const rectCon = containerRef.current.getBoundingClientRect();
 
         split.words.forEach((word, i) => {
@@ -35,7 +34,7 @@ export default function StartPart() {
           const control2 = { x: 0 + 20, y: 0 - 40 };
 
           gsap.to(word, {
-            duration: 2,
+            duration: 1,
             motionPath: {
               path: [
                 { x: startX, y: startY },
@@ -81,7 +80,7 @@ export default function StartPart() {
         - Back-End Stack: .NET Core Web Api, Entity Framework, PostqreSQL
         Database, JWT, Redis, RabbitMQ
         <br />- FEATURE: improve the Front-End structure, write unit tests, log
-        the project, GSAP
+        the project, more animations
       </p>
     </div>
   );
