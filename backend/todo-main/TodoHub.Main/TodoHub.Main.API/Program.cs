@@ -66,7 +66,7 @@ try
                 ValidateIssuer = true,
                 ValidateAudience = true,
                 ValidateLifetime = true,
-                ClockSkew = TimeSpan.FromMinutes(1),
+                ClockSkew = TimeSpan.FromSeconds(10),
                 ValidateIssuerSigningKey = true,
                 ValidIssuer = builder.Configuration["Jwt:Issuer"],
                 ValidAudience = builder.Configuration["Jwt:Audience"],
@@ -125,6 +125,7 @@ try
         options.AddPolicy("AllowFrontend",
             builder => builder
                 .WithOrigins(
+                "https://localhost:3000",
                 "http://localhost:3000",
                 "http://192.168.208.1:3000",
                 "http://10.0.0.183:3000"
@@ -219,6 +220,16 @@ try
         });
 
         options.RejectionStatusCode = 429;
+        options.OnRejected = async (context, cancellationToken) =>
+        {
+            context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+            context.HttpContext.Response.ContentType = "application/json";
+
+            await context.HttpContext.Response.WriteAsync(
+                "{\"error\": \"Too many requests. Please try again later.\"}",
+                cancellationToken
+            );
+        };
     });
 
 

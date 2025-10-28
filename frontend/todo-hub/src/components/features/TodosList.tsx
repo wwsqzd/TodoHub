@@ -20,12 +20,6 @@ export default function TodosList({
   onModify,
   onEdit,
 }: Props) {
-  // const ConRef = useRef<HTMLDivElement>(null);
-  // const state = Flip.getState(ConRef.current);
-  // const onDeleteAnim = async (id) => {
-  //   await Flip.from(state, { duration: 2, ease: "power1.inOut" });
-  //   onDelete?.(id);
-  // };
 
   return (
     <div className="flex flex-col items-center pt-5">

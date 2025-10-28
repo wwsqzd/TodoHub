@@ -25,6 +25,12 @@ export default function ButtonUI({
   text_color,
   type,
 }: Props) {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && action && !disabled) {
+      action();
+    }
+  };
+
   return (
     <button
       className={`
@@ -39,6 +45,7 @@ export default function ButtonUI({
             transition
             cursor-pointer`}
       onClick={action}
+      onKeyDown={handleKeyDown}
       disabled={disabled}
       type={type}
     >

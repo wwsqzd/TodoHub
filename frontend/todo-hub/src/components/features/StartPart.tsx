@@ -50,7 +50,7 @@ export default function StartPart() {
               "M0,0 C0.027,0.123 0.118,0.192 0.17,0.294 0.327,0.6 0.512,0.851 0.608,0.946 0.7,1.038 0.851,1 1,1 "
             ),
             opacity: 1,
-            delay: i * 0.1, // имитация stagger
+            delay: i * 0.1, // stagger
           });
         });
       }
@@ -75,7 +75,8 @@ export default function StartPart() {
         To-Do with modern architecture.
       </p>
       <p className="text-shadow-md text-left">
-        - Front-End Stack: Next.js, axios, zxcvbn, react-syntax-highlighter
+        - Front-End Stack: Next.js, axios, zxcvbn, react-syntax-highlighter,
+        GSAP
         <br />
         - Back-End Stack: .NET Core Web Api, Entity Framework, PostqreSQL
         Database, JWT, Redis, RabbitMQ

@@ -23,14 +23,22 @@ export default function Dashboard() {
   useEffect(() => {
     const getTodos = async () => {
       const res = await getUserTodos();
-      console.log(res.value);
+      console.log(res);
       setTodos(res.value);
       setLoadingTodos(false);
     };
     getTodos();
   }, []);
 
+  const ConRef = useRef<HTMLDivElement>(null);
+  const flipState = useRef<Flip.FlipState | null>(null);
+
   const handleCreate = (newTodo: Todo) => {
+    if (!ConRef.current) return;
+    const todosElements = ConRef.current.querySelectorAll(
+      "div.break-inside-avoid"
+    );
+    flipState.current = Flip.getState(todosElements);
     setTodos((prev) => [newTodo, ...prev]);
   };
 
@@ -38,10 +46,7 @@ export default function Dashboard() {
     setShowModalCreate(true);
   };
 
-  const ConRef = useRef<HTMLDivElement>(null);
-  const flipState = useRef<Flip.FlipState | null>(null);
-
-  // with animation
+  // delete with animation
   const handleDeleteTodo = (id: string) => {
     if (!ConRef.current) return;
     const todosElements = ConRef.current.querySelectorAll(

@@ -65,13 +65,28 @@ interface LoginResponse {
 }
 
 // Login function
-export const login = async (data: { email: string; password: string }): Promise<LoginResponse> => {
-  const res = await api.post(`${API_URL}/auth/login`, data, { withCredentials: true});
-  if (res.status === 200 && res.data.value?.token) {
-    document.cookie = `accessToken=${res.data.value.token}; path=/;`;
-    return res.data;
-  } else {
+export const login = async (
+  data: { email: string; password: string }
+): Promise<LoginResponse> => {
+  try {
+    const res = await api.post(`${API_URL}/auth/login`, data, { withCredentials: true });
+    
+    if (res.status === 200 && res.data.value?.token) {
+      document.cookie = `accessToken=${res.data.value.token}; path=/;`;
+      return res.data; 
+    }
+
     throw new Error(res.data.error || "Login failed");
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err) && err.response) {
+      if (err.response.status === 429) {
+        throw err;
+      }
+      throw new Error(err.response.data?.error || `Request failed with status ${err.response.status}`);
+    }
+
+    if (err instanceof Error) throw err;
+    throw new Error("Unknown error");
   }
 };
 

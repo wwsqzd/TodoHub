@@ -64,7 +64,7 @@ namespace TodoHub.Main.DataAccess.Repository
         // Get all todo by ID
         public async Task<List<TodoDTO>> GetTodosAsyncRepo(Guid UserId)
         {
-            var todos = await _context.Todos.Where(t => t.OwnerId == UserId).ToListAsync();
+            var todos = await _context.Todos.Where(t => t.OwnerId == UserId).OrderBy(t => t.IsCompleted).ThenByDescending(t => t.CreatedDate).ToListAsync();
             var todoDTOs = _mapper.Map<List<TodoDTO>>(todos);
             return todoDTOs;
 

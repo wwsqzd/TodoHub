@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { login } from "@/lib/api";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
+import gsap from "gsap";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -12,6 +13,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { setAccessToken } = useAuth();
+
+  const loginRef = useRef<HTMLDivElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,6 +27,26 @@ export default function LoginPage() {
       setPassword("");
       window.location.href = "/profile"; // Redirect to home page
     } catch (err: unknown) {
+      if (err) {
+        gsap.fromTo(
+          loginRef.current,
+          { x: -10 },
+          {
+            x: 0,
+            duration: 0.5,
+            ease: "power1.inOut",
+            keyframes: [
+              { x: -8 },
+              { x: 8 },
+              { x: -5 },
+              { x: 5 },
+              { x: -3 },
+              { x: 3 },
+              { x: 0 },
+            ],
+          }
+        );
+      }
       if (axios.isAxiosError(err)) {
         if (err.response?.status === 401) {
           setError("Invalid email or password");
@@ -31,6 +54,10 @@ export default function LoginPage() {
         }
         if (err.response?.status === 500) {
           setError("Server error. Please try again later.");
+          return;
+        }
+        if (err.response?.status === 429) {
+          setError("Too many requests, calm down");
           return;
         }
       }
@@ -42,7 +69,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex flex-col items-center">
+    <div ref={loginRef} className="flex flex-col items-center">
       <h1 className="mb-6 text-2xl font-bold">Login</h1>
       <form
         onSubmit={handleSubmit}

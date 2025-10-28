@@ -33,6 +33,7 @@ namespace TodoHub.Main.Core.Services
             string HashKey = $"todos:{UserId}";
             var all = await _db.HashGetAllAsync(HashKey);
             return all.Select(x => JsonSerializer.Deserialize<TodoDTO>(x.Value)!)
+                      .OrderBy(t => t.IsCompleted).ThenByDescending(t => t.CreatedDate)
                       .ToList();
         }
 

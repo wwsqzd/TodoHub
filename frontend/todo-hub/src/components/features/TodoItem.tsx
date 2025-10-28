@@ -60,12 +60,26 @@ export default function TodoItem({ todo, onDelete, onModify, onEdit }: Props) {
       className="max-w-xs w-full h-fit bg-white rounded-lg shadow-md p-6 flex flex-col justify-between gap-3 border border-gray-200 hover:shadow-lg transition-all"
     >
       <div className="flex flex-col items-start gap-2">
-        <p className="font-bold text-xl text-gray-900 break-words break-all">
-          {todo.title}
-        </p>
-        <p className="text-gray-500 break-words break-all">
-          {todo.description}
-        </p>
+        {todo.isCompleted ? (
+          <>
+            <p className="font-bold text-xl text-gray-400 break-words break-all line-through">
+              {todo.title}
+            </p>
+            <p className="text-gray-300 break-words break-all line-through">
+              {todo.description}
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="font-bold text-xl text-gray-900 break-words break-all">
+              {todo.title}
+            </p>
+            <p className="text-gray-500 break-words break-all">
+              {todo.description}
+            </p>
+          </>
+        )}
+
         <p className="text-xs text-gray-400">
           created: {new Date(todo.createdDate).toLocaleDateString()}
         </p>

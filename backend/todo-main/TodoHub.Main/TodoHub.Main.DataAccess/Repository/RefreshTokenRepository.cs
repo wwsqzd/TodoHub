@@ -103,8 +103,10 @@ namespace TodoHub.Main.DataAccess.Repository
         public async Task<bool> isRefreshTokenValidRepo(string refreshToken)
         {
             var token = await _context.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash.Equals(refreshToken));
+            Log.Information($"[REFRESH CHECK] Token expires at: {token?.Expires:o}, Now: {DateTime.UtcNow:o}");
+            Log.Information($"[REFRESH CHECK HASH] Searching for: {refreshToken}, Found: {token?.TokenHash}");
             if (token == null) return false;
-            if (token.Expires <= DateTime.UtcNow) return false;
+            if (token.Expires <= DateTime.UtcNow.AddSeconds(-10)) return false;
             return true;
         }
     }
