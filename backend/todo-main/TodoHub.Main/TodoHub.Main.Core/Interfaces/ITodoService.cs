@@ -13,6 +13,6 @@ namespace TodoHub.Main.Core.Interfaces
 
         Task<Result<TodoDTO>> GetTodoByIdAsync(Guid id, Guid OwnerId);
         Task<Result<TodoDTO>> UpdateTodoAsync(UpdateTodoDTO todo, Guid OwnerId, Guid TodoId);
-        Task<Result<List<TodoDTO>>> GetTodosAsync(Guid UserId);
+        Task<Result<List<TodoDTO>>> GetTodosAsync(Guid UserId, DateTime? lastCreated, Guid? lastId);
     }
 }

@@ -7,7 +7,7 @@ import { getUserTodos } from "@/lib/api";
 import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { Todo } from "@/types";
 import ModifyTodoModalWindow from "@/components/features/ModifyTodoModalWindow";
-
+import { useInView } from "react-intersection-observer";
 import gsap from "gsap";
 import { Flip } from "gsap/Flip";
 
@@ -19,20 +19,79 @@ export default function Dashboard() {
   const [showModalCreate, setShowModalCreate] = useState(false);
   const [showModalModify, setShowModalModify] = useState(false);
   const [loadingTodos, setLoadingTodos] = useState(true);
-
-  useEffect(() => {
-    const getTodos = async () => {
-      const res = await getUserTodos();
-      console.log(res);
-      setTodos(res.value);
-      setLoadingTodos(false);
-    };
-    getTodos();
-  }, []);
-
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [lastCreated, setLastCreated] = useState<Date | null>(null);
+  const [lastId, setLastId] = useState<number | null>(null);
+  const { ref: sentinelRef, inView } = useInView({
+    threshold: 0,
+    rootMargin: "100px",
+    delay: 500,
+  });
   const ConRef = useRef<HTMLDivElement>(null);
   const flipState = useRef<Flip.FlipState | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
+  // get todos
+  const getTodos = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (lastCreated && lastId) {
+        params.append("lastCreated", lastCreated.toISOString());
+        params.append("lastId", lastId.toString());
+      }
+      const res = await getUserTodos(params);
+      console.log(res.value);
+      if (res.value.length === 0) {
+        setHasMore(false);
+        return;
+      }
+
+      setTodos((prev) => {
+        const combined = [...prev, ...res.value];
+        const unique = Array.from(
+          new Map(combined.map((t) => [t.id, t])).values()
+        );
+        return unique;
+      });
+
+      const last = res.value[res.value.length - 1];
+      setLastCreated(new Date(last.createdDate));
+      setLastId(last.id);
+
+      if (res.value.length < 10) {
+        setHasMore(false);
+      }
+    } finally {
+      setLoadingTodos(false);
+      setIsFetchingMore(false);
+      setIsInitialLoad(false);
+    }
+  };
+
+  // Начальная загрузка
+  useEffect(() => {
+    if (isInitialLoad) {
+      setLoadingTodos(true);
+      getTodos();
+    }
+  }, [isInitialLoad]);
+
+  // Бесконечная прокрутка
+  useEffect(() => {
+    if (!isInitialLoad && inView && hasMore && !isFetchingMore) {
+      setIsFetchingMore(true);
+      if (ConRef.current) {
+        const todosElements = ConRef.current.querySelectorAll(
+          "div.break-inside-avoid"
+        );
+        flipState.current = Flip.getState(todosElements);
+      }
+      getTodos();
+    }
+  }, [inView, hasMore, isFetchingMore, isInitialLoad]);
+
+  // handle create
   const handleCreate = (newTodo: Todo) => {
     if (!ConRef.current) return;
     const todosElements = ConRef.current.querySelectorAll(
@@ -42,6 +101,7 @@ export default function Dashboard() {
     setTodos((prev) => [newTodo, ...prev]);
   };
 
+  // handle create modal
   const handleButton = () => {
     setShowModalCreate(true);
   };
@@ -58,15 +118,19 @@ export default function Dashboard() {
 
   // animation
   useLayoutEffect(() => {
-    if (flipState.current) {
-      Flip.from(flipState.current, {
-        duration: 0.6,
-        ease: "power1.inOut",
-        absolute: true,
-        stagger: 0.05,
-      });
-      flipState.current = null;
-    }
+    const animateLoad = async () => {
+      if (flipState.current) {
+        await Flip.from(flipState.current, {
+          duration: 0.6,
+          ease: "power1.inOut",
+          absolute: true,
+          stagger: 0.05,
+        });
+        flipState.current = null;
+      }
+    };
+    animateLoad();
+    setIsFetchingMore(false);
   }, [todos]);
 
   const handleModifyTodo = (updatedTodo: Todo) => {
@@ -106,14 +170,21 @@ export default function Dashboard() {
       {loadingTodos ? (
         <LoadingUI />
       ) : todos && todos.length > 0 ? (
-        <TodosList
-          ref={ConRef}
-          todos={todos}
-          handleButton={handleButton}
-          onDelete={handleDeleteTodo}
-          onModify={handleModifyTodo}
-          onEdit={handleEditTodo}
-        />
+        <div className="flex flex-col justify-between min-h-screen">
+          <TodosList
+            ref={ConRef}
+            todos={todos}
+            handleButton={handleButton}
+            onDelete={handleDeleteTodo}
+            onModify={handleModifyTodo}
+            onEdit={handleEditTodo}
+          />
+          {hasMore && (
+            <div ref={sentinelRef} className="w-full py-4 flex justify-center">
+              {isFetchingMore && <LoadingUI />}
+            </div>
+          )}
+        </div>
       ) : (
         <WelcomePart handleButton={handleButton} />
       )}

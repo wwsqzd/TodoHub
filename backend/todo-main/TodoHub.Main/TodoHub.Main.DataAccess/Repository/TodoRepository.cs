@@ -61,13 +61,40 @@ namespace TodoHub.Main.DataAccess.Repository
             return todosDTOs;
         }
 
-        // Get all todo by ID
-        public async Task<List<TodoDTO>> GetTodosAsyncRepo(Guid UserId)
+        // Get todo by userID and page
+        public async Task<List<TodoDTO>> GetTodosByPageAsyncRepo(Guid UserId, DateTime? lastCreated, Guid? lastId)
         {
-            var todos = await _context.Todos.Where(t => t.OwnerId == UserId).OrderBy(t => t.IsCompleted).ThenByDescending(t => t.CreatedDate).ToListAsync();
+            var query = _context.Todos
+                .Where(t => t.OwnerId == UserId);
+
+            if (lastCreated != null && lastId != null)
+            {
+                query = query.Where(t =>
+                    t.CreatedDate < lastCreated.Value ||
+                    (t.CreatedDate == lastCreated.Value && t.Id.CompareTo(lastId.Value) < 0));
+            }
+
+            query = query.OrderBy(t => t.IsCompleted)
+                         .ThenByDescending(t => t.CreatedDate)
+                         .ThenByDescending(t => t.Id);
+
+            
+            var todos = await query.Take(10).ToListAsync();
+
             var todoDTOs = _mapper.Map<List<TodoDTO>>(todos);
             return todoDTOs;
+        }
 
+        public async Task<List<TodoDTO>> GetTodosAsyncRepo(Guid UserId)
+        {
+            var todos = await _context.Todos
+                .Where(t => t.OwnerId == UserId)
+                .OrderBy(t => t.IsCompleted)
+                .ThenByDescending(t => t.CreatedDate)
+                .ThenByDescending(t => t.Id)
+                .ToListAsync();
+            var todoDTOs = _mapper.Map<List<TodoDTO>>(todos);
+            return todoDTOs;
         }
 
         // Update todo

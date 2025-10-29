@@ -155,9 +155,9 @@ export const DeleteUser = async (id: string) => {
 
 
 // fetch todos
-export const getUserTodos = async () => {
+export const getUserTodos = async (params: URLSearchParams) => {
   try {
-    const res = await api.get(`${API_URL}/todos`, {withCredentials: true});
+    const res = await api.get(`${API_URL}/todos?${params.toString()}`, { withCredentials: true });
     return res.data;
   } catch (err: unknown)
   {

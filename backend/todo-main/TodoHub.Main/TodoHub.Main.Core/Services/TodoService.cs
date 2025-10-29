@@ -58,21 +58,22 @@ namespace TodoHub.Main.Core.Services
             return Result<TodoDTO>.Ok(todo);
         }
 
-        // get all todos
-        public async Task<Result<List<TodoDTO>>> GetTodosAsync(Guid UserId)
+        // get todos
+        public async Task<Result<List<TodoDTO>>> GetTodosAsync(Guid UserId, DateTime? lastCreated, Guid? lastId)
         {
-            var todos_redis = await _todoCacheService.GetAllTodosAsync(UserId);
+            var todos_redis = await _todoCacheService.GetTodosAsync(UserId, lastCreated, lastId);
             if (todos_redis?.Any() == true)
             {
                 return Result<List<TodoDTO>>.Ok(todos_redis, "Todos from redis");
             }
-            var todos = await _todoRepository.GetTodosAsyncRepo(UserId);
-            if (todos == null)
+            var todosPage = await _todoRepository.GetTodosByPageAsyncRepo(UserId, lastCreated, lastId);
+            if (todosPage == null)
             {
-                return Result<List<TodoDTO>>.Fail("Todos is empty in Database Postgresql");
+                return Result<List<TodoDTO>>.Fail("Todos is empty in Database");
             }
+            var todos = await _todoRepository.GetTodosAsyncRepo(UserId);
             await _todoCacheService.SetTodosAsync(todos, UserId);
-            return Result<List<TodoDTO>>.Ok(todos, "Todos from db");
+            return Result<List<TodoDTO>>.Ok(todosPage, "Todos from db");
         }
         // update todo
         public async Task<Result<TodoDTO>> UpdateTodoAsync(UpdateTodoDTO todo, Guid OwnerId, Guid TodoId)

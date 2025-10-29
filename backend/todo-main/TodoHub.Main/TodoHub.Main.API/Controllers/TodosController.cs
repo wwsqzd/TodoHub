@@ -18,16 +18,16 @@ namespace TodoHub.Main.API.Controllers
             _todoService = service;
         }
 
-
-        [HttpGet]
+        // Get todos
+        [HttpGet()]
         [EnableRateLimiting("TodosPolicy")]
-        public async Task<IActionResult> GetTodos()
+        public async Task<IActionResult> GetTodos(DateTime? lastCreated, Guid? lastId)
         {
             var userIdClaim = User.FindFirst("UserId")?.Value;
             if (userIdClaim is null || !Guid.TryParse(userIdClaim, out var userId))
                 return Unauthorized("Invalid token");
 
-            var todos = await _todoService.GetTodosAsync(userId);
+            var todos = await _todoService.GetTodosAsync(userId, lastCreated, lastId);
             if (!todos.Success)
             {
                 return NotFound();

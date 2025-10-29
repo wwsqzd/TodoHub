@@ -1,28 +1,22 @@
+import React, { forwardRef } from "react";
 import TodoItem from "./TodoItem";
 import ButtonUI from "../ui/ButtonUI";
 import { Todo } from "@/types";
-import { RefObject } from "react";
 
 type Props = {
   todos: Array<Todo>;
-  ref: RefObject<HTMLDivElement | null>;
   handleButton: () => void;
   onDelete?: (id: string) => void;
   onModify?: (todo: Todo) => void;
   onEdit: (todo: Todo) => void;
 };
 
-export default function TodosList({
-  todos,
-  ref,
-  handleButton,
-  onDelete,
-  onModify,
-  onEdit,
-}: Props) {
-
+const TodosList = forwardRef<HTMLDivElement, Props>(function TodosList(
+  { todos, handleButton, onDelete, onModify, onEdit },
+  ref
+) {
   return (
-    <div className="flex flex-col items-center pt-5">
+    <div className="flex flex-col items-center pt-5 pb-20">
       <ButtonUI
         color="blue"
         text="Create Todo"
@@ -51,4 +45,6 @@ export default function TodosList({
       </div>
     </div>
   );
-}
+});
+
+export default TodosList;
