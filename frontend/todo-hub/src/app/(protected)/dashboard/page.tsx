@@ -41,7 +41,6 @@ export default function Dashboard() {
         params.append("lastId", lastId.toString());
       }
       const res = await getUserTodos(params);
-      console.log(res.value);
       if (res.value.length === 0) {
         setHasMore(false);
         return;
@@ -69,7 +68,6 @@ export default function Dashboard() {
     }
   };
 
-  // Начальная загрузка
   useEffect(() => {
     if (isInitialLoad) {
       setLoadingTodos(true);
@@ -77,7 +75,6 @@ export default function Dashboard() {
     }
   }, [isInitialLoad]);
 
-  // Бесконечная прокрутка
   useEffect(() => {
     if (!isInitialLoad && inView && hasMore && !isFetchingMore) {
       setIsFetchingMore(true);
@@ -89,15 +86,10 @@ export default function Dashboard() {
       }
       getTodos();
     }
-  }, [inView, hasMore, isFetchingMore, isInitialLoad]);
+  }, [todos, inView, hasMore, isFetchingMore, isInitialLoad]);
 
   // handle create
   const handleCreate = (newTodo: Todo) => {
-    if (!ConRef.current) return;
-    const todosElements = ConRef.current.querySelectorAll(
-      "div.break-inside-avoid"
-    );
-    flipState.current = Flip.getState(todosElements);
     setTodos((prev) => [newTodo, ...prev]);
   };
 
@@ -121,7 +113,7 @@ export default function Dashboard() {
     const animateLoad = async () => {
       if (flipState.current) {
         await Flip.from(flipState.current, {
-          duration: 0.6,
+          duration: 0.8,
           ease: "power1.inOut",
           absolute: true,
           stagger: 0.05,
@@ -168,9 +160,13 @@ export default function Dashboard() {
       )}
 
       {loadingTodos ? (
-        <LoadingUI />
+        <div className="w-[100vw - 30px] h-screen p-6 flex justify-center">
+          <div className="h-72 w-[550px]">
+            <LoadingUI />
+          </div>
+        </div>
       ) : todos && todos.length > 0 ? (
-        <div className="flex flex-col justify-between min-h-screen">
+        <div className="flex flex-col justify-between min-h-[calc(100vh-110px)]">
           <TodosList
             ref={ConRef}
             todos={todos}

@@ -25,6 +25,18 @@ namespace TodoHub.Main.DataAccess.Repository
         public async Task AddUserAsyncRepo(RegisterDTO user)
         {
             var entity = _mapper.Map<UserEntity>(user);
+            entity.AuthProvider = "Local";
+            await _context.Users.AddAsync(entity);
+            await _context.SaveChangesAsync();
+        }
+
+        // Add Google User
+        public async Task AddGoogleUserAsyncRepo(UserGoogleDTO user)
+        {
+            var entity = _mapper.Map<UserEntity>(user);
+            entity.AuthProvider = "Google";
+            entity.GoogleId = user.GoogleId;
+
             await _context.Users.AddAsync(entity);
             await _context.SaveChangesAsync();
         }
@@ -40,14 +52,17 @@ namespace TodoHub.Main.DataAccess.Repository
         // Get user with id
         public async Task<UserEntity?> GetUserByIdAsyncRepo(Guid id)
         {
-            return await _context.Users.FindAsync(id);
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return null;
+            return user;
         }
 
         // Get user with email
         public async Task<UserEntity?> GetUserByEmailAsyncRepo(string email)
         {
-            return await _context.Users
-            .FirstOrDefaultAsync(u => u.Email == email);
+            var user =  await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            if (user == null) return null;
+            return user;
         }
 
         // delete user

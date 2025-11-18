@@ -4,8 +4,19 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
     images: {
-    domains: ["media1.giphy.com"],
+  remotePatterns: [
+    {
+      protocol: 'https',
+      hostname: 'media1.giphy.com',
+      pathname: '/**',
     },
+    {
+      protocol: 'https',
+      hostname: 'lh3.googleusercontent.com',
+      pathname: '/**',
+    },
+  ],
+},
   
 };
 

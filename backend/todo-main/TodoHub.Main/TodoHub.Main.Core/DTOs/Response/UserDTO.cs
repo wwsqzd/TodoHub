@@ -11,6 +11,9 @@ namespace TodoHub.Main.Core.DTOs.Response
         public bool IsAdmin { get; set; }
 
         public DateTime CreatedAt { get; set; }
+        public string AuthProvider { get; set; } = string.Empty;
+        public string GoogleId { get; set; } = string.Empty;
+        public string? PictureUrl { get; set; } = null;
 
     }
 }

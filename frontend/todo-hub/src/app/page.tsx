@@ -24,9 +24,9 @@ export default function Home() {
         </p>
         <DynamicBackEndPart />
 
-        <div className="w-[1000px]">
+        {/* <div className="w-[1000px]">
           <p className="text-3xl">Front-End</p>
-        </div>
+        </div> */}
       </div>
     </div>
   );

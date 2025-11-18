@@ -95,6 +95,11 @@ try
     builder.Services.AddScoped<AbstractValidator<UpdateTodoDTO>, UpdateTodoDTOValidator>();
     builder.Services.AddSingleton<ITodoCacheService, TodoCacheService>();
 
+    // google
+    builder.Services.AddHttpClient();
+    builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
+
+    
 
     // rebbitmq
 
@@ -260,7 +265,8 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
 
-   
+
+    
 
     app.MapControllers();
 

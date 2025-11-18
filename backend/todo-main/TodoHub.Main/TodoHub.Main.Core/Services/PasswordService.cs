@@ -42,23 +42,21 @@ namespace TodoHub.Main.Core.Services
 
         public async Task<string?> RefreshToken(string old_refresh_token, Guid userId)
         {
-            //Log.Information($"Token in RefreshToken method: {old_refresh_token}");
-            var old_hash_token = HashToken(old_refresh_token);
-            //Log.Information($"Token Hash in RefreshToken method: {old_hash_token}");
+            var oldHash = HashToken(old_refresh_token);
 
-            var old_token = await _refreshTokenRepository.GetTokenRepo(old_hash_token);
-            if (old_token != null && old_token.IsActive)
+            var oldToken = await _refreshTokenRepository.GetTokenRepo(oldHash);
+            if (oldToken == null)
             {
-                var new_token = GenerateRefreshToken();
-                var new_hash_token = HashToken(new_token);
-                
-                await _refreshTokenRepository.RefreshTokenRepo(old_hash_token, new_hash_token, userId);
-                return new_token;
-            } else
-            {
-                Log.Error("old token is Expired");
+                Log.Error("Old token is Invalid (in RefreshToken // PasswordService)");
+                return null;
             }
-            return null;
+
+            var newToken = GenerateRefreshToken();
+            var newHash = HashToken(newToken);
+
+            await _refreshTokenRepository.RefreshTokenRepo(oldHash, newHash, userId);
+
+            return newToken;
         }
 
 
@@ -82,11 +80,7 @@ namespace TodoHub.Main.Core.Services
         public async Task<Guid?> GetUserId(string token)
         {
             string hash_token = HashToken(token);
-            var userId = await _refreshTokenRepository.GetUserIdRepo(hash_token);
-            if (userId == null) {
-               throw new Exception("User not found"); 
-            }
-            return userId;
+           return await _refreshTokenRepository.GetUserIdRepo(hash_token);
         }
 
         public async Task RevokeRefreshToken(string token)
@@ -102,12 +96,7 @@ namespace TodoHub.Main.Core.Services
         public async Task<bool> isRefreshTokenValid(string token)
         {
             var hash_token = HashToken(token);
-            bool valid = await _refreshTokenRepository.isRefreshTokenValidRepo(hash_token);
-            if (valid)
-            {
-                return true;
-            }
-            return false;
+            return await _refreshTokenRepository.isRefreshTokenValidRepo(hash_token);
         }
     }
 }

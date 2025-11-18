@@ -19,6 +19,7 @@ namespace TodoHub.Main.Core.Mappings
             CreateMap<UserDTO, UserEntity>().ForMember(dest => dest.CreatedAt, opt => opt.Ignore());
             CreateMap<UserEntity, UserDTO>();
             CreateMap<RegisterDTO, UserEntity>();
+            CreateMap<UserGoogleDTO, UserEntity>();
         }
     }
 }

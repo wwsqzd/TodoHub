@@ -1,11 +1,13 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { login } from "@/lib/api";
+import { login, loginWithGoogle } from "@/lib/api";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
 import gsap from "gsap";
+import { FcGoogle } from "react-icons/fc";
+import { FaGithub } from "react-icons/fa6";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -68,9 +70,29 @@ export default function LoginPage() {
     }
   };
 
+  const handleLoginWithGoogle = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await loginWithGoogle();
+    } catch (err: unknown) {
+      console.error("Google login failed:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div ref={loginRef} className="flex flex-col items-center">
-      <h1 className="mb-6 text-2xl font-bold">Login</h1>
+      <h1 className="text-2xl font-bold">Login</h1>
+      <div className="w-40 m-3 flex justify-center gap-3  ">
+        <div className="p-1 cursor-pointer" onClick={handleLoginWithGoogle}>
+          <FcGoogle size={32} />
+        </div>
+        <div className="p-1 cursor-pointer">
+          <FaGithub size={30} />
+        </div>
+      </div>
       <form
         onSubmit={handleSubmit}
         className="flex flex-col gap-4 w-full max-w-xs"

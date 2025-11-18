@@ -26,7 +26,7 @@ const TodosList = forwardRef<HTMLDivElement, Props>(function TodosList(
       />
       <div
         ref={ref}
-        className="min-h-screen columns-1 sm:columns-2 lg:columns-3 gap-4 p-4"
+        className="min-h-1/6 columns-1 sm:columns-2 lg:columns-3 gap-4 p-4"
       >
         {todos.map((todo) => (
           <div

@@ -13,10 +13,12 @@ namespace TodoHub.Main.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IGoogleAuthService _googleAuthService;
 
-        public AuthController(IUserService userService)
+        public AuthController(IUserService userService, IGoogleAuthService googleService)
         {
             _userService = userService;
+            _googleAuthService = googleService;
         }
 
         // "auth/login"
@@ -52,6 +54,47 @@ namespace TodoHub.Main.API.Controllers
             return Ok(response);
         }
 
+        // Google Auth
+        [HttpGet("login/google")]
+        [EnableRateLimiting("LoginPolicy")]
+        public async Task<IActionResult> LoginGoogle()
+        {
+            var redirectUrl = _googleAuthService.GetGoogleLoginUrl();
+            return Redirect(redirectUrl);
+        }
+
+        // Google Auth
+        [HttpGet("login/google/callback")]
+        public async Task<IActionResult> LoginGoogleCallBack([FromQuery] string code)
+        {
+            if (string.IsNullOrEmpty(code))
+            {
+                return BadRequest("No code received from Google");
+            }
+
+            var (refreshToken, accessToken) = await _googleAuthService.HandleGoogleCallbackAsync(code);
+            if (refreshToken == "" && accessToken == null) return Unauthorized();
+
+            Response.Cookies.Append("accessToken", accessToken.Value.Token, new CookieOptions
+            {
+                HttpOnly = false,
+                Secure = true,
+                Path = "/",
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddHours(2),
+            });
+            Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                Path = "/",
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddDays(7)
+            });
+
+            return Redirect("http://localhost:3000/profile");
+        }
+
         //"auth/register"
         [HttpPost("register")]
         [EnableRateLimiting("SignUpPolicy")]
@@ -75,6 +118,7 @@ namespace TodoHub.Main.API.Controllers
         [EnableRateLimiting("RefreshPolicy")]
         public async Task<IActionResult> RefreshToken()
         {
+            Log.Information($"[REFRESH REQUEST] Received refresh token request at {DateTime.UtcNow}");
             if (!Request.Cookies.TryGetValue("refreshToken", out var refreshToken))
             {
                 //Logger

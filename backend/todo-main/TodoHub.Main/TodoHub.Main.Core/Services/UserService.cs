@@ -107,38 +107,46 @@ namespace TodoHub.Main.Core.Services
         // refresh token 
         public async Task<(string token, Result<LoginResponseDTO>)> RefreshLoginAsync(string old_refresh_token)
         {
+            
             // validation
             var isValid = await _passwordService.isRefreshTokenValid(old_refresh_token);
-            if (!isValid) return (string.Empty, Result<LoginResponseDTO>.Fail("Refresh token is Invalid"));
+            if (!isValid)
+            {
+                return (string.Empty, Result<LoginResponseDTO>.Fail("Refresh token is Invalid"));
+            }
+
 
             // user id in token
             var userIdInToken = await _passwordService.GetUserId(old_refresh_token);
-            if (userIdInToken == null) {
-                return (string.Empty, Result<LoginResponseDTO>.Fail("UserID wird im Token nicht gefunden "));
+            if (userIdInToken == null)
+            {
+                return (string.Empty, Result<LoginResponseDTO>.Fail("UserID not found in token"));
             }
+            // find user
             var user = await _userRepository.GetUserByIdAsyncRepo(userIdInToken.Value);
             if (user == null)
             {
-                return (string.Empty, Result<LoginResponseDTO>.Fail("Der Benutzer mit dieser ID wurde nicht gefunden."));
+                return (string.Empty, Result<LoginResponseDTO>.Fail("The user with this ID was not found."));
+            }
+            // JWT Token
+            var jwt = _jwtService.getJwtToken(user);
+            var token = new JwtSecurityTokenHandler().WriteToken(jwt);
+
+            // Refresh Token
+            var newRefreshtoken = await _passwordService.RefreshToken(old_refresh_token, userIdInToken.Value);
+            if (newRefreshtoken == null)
+            {
+                return (string.Empty, Result<LoginResponseDTO>.Fail("Refresh Token is Invalid"));
             }
 
-            var token = _jwtService.getJwtToken(user);
-
-            var refreshtoken = await _passwordService.RefreshToken(old_refresh_token, userIdInToken.Value);
-            
-            
-            if (refreshtoken == null)
+            //response
+            var responseNew = new LoginResponseDTO
             {
-                return (string.Empty, Result<LoginResponseDTO>.Fail("Refresh Token is invalid"));
-            }
-
-            var response = new LoginResponseDTO
-            {
-                Token = new JwtSecurityTokenHandler().WriteToken(token),
-                ExpiresAt = token.ValidTo,
+                Token = token,
+                ExpiresAt = jwt.ValidTo,
             };
 
-            return (refreshtoken, Result<LoginResponseDTO>.Ok(response));
+            return (newRefreshtoken, Result<LoginResponseDTO>.Ok(responseNew));
         }
         
 
@@ -177,11 +185,12 @@ namespace TodoHub.Main.Core.Services
         public async Task<Result<UserDTO>> GetMe(Guid userId)
         {
             var user = await _userRepository.GetMeRepo(userId);
-            if (user != null)
+            if (user == null)
             {
-                return Result<UserDTO>.Ok(user);
+                return Result<UserDTO>.Fail("User does not exist");    
             }
-            return Result<UserDTO>.Fail("User does not exist");
+            return Result<UserDTO>.Ok(user);
+            
         }
 
         // logout

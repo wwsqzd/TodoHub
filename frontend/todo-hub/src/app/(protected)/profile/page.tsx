@@ -7,7 +7,7 @@ import axios from "axios";
 import { CiUser } from "react-icons/ci";
 import LoadingUI from "@/components/ui/LoadingUI";
 import { Profile } from "@/types";
-// import ButtonUI from "@/components/ui/ButtonUI";
+import Image from "next/image";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile>();
@@ -57,32 +57,39 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen flex flex-col items-center">
       {error && <p className="text-red-500">{error}</p>}
-      {loading ? (
-        <LoadingUI />
-      ) : profile ? (
-        <div className="bg-white rounded shadow p-6 w-full max-w-md flex flex-col items-center justify-center m-10">
-          <h1 className="mb-6 text-2xl font-bold">Account Profile</h1>
-          <div className="w-[70px] h-[70px] ">
-            <CiUser className="w-full h-full text-gray-400" />
-          </div>
-          <div className="w-full flex flex-col gap-2 mt-4">
-            <p className="text-left text-sm">Name: {profile.name}</p>
-            <p className="text-left text-sm">Email: {profile.email}</p>
-            <p className="text-left text-sm">
-              Admin: {profile.IsAdmin ? "No" : "Yes"}
-            </p>
-          </div>
-          <button
-            className="mt-4 bg-red-800 text-white rounded py-2 px-4 font-semibold cursor-pointer"
-            onClick={handleLogout}
-          >
-            Log out
-          </button>
-          {/* <ButtonUI color="red" text="Log Out" w="18" h="11" /> */}
-        </div>
-      ) : (
-        <></>
-      )}
+      <div className="bg-white min-h-44 rounded shadow p-6 w-full h-full max-w-md flex flex-col items-center justify-center m-10 relative">
+        {loading ? (
+          <LoadingUI />
+        ) : profile ? (
+          <>
+            <h1 className="mb-6 text-2xl font-bold">Account Profile</h1>
+            <div className="w-[70px] h-[70px]">
+              {profile.pictureUrl ? (
+                <Image
+                  src={profile.pictureUrl}
+                  alt="profile img"
+                  width={70}
+                  height={70}
+                />
+              ) : (
+                <CiUser className="w-full h-full text-gray-400" />
+              )}
+            </div>
+            <div className="w-full flex flex-col gap-2 mt-4">
+              <p className="text-left text-sm">Name: {profile.name}</p>
+              <p className="text-left text-sm">Email: {profile.email}</p>
+            </div>
+            <button
+              className="mt-4 bg-red-800 text-white rounded py-2 px-4 font-semibold cursor-pointer"
+              onClick={handleLogout}
+            >
+              Log out
+            </button>
+          </>
+        ) : (
+          <></>
+        )}
+      </div>
     </div>
   );
 }

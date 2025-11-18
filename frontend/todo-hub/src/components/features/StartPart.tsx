@@ -69,6 +69,7 @@ export default function StartPart() {
         width={225}
         height={225}
         className="self-center"
+        unoptimized
       />
       <p ref={text} className="text-3xl font-bold text-center">
         TodoHub: A lightweight practical application for CRUD operations on

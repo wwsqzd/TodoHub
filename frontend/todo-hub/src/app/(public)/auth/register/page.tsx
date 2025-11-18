@@ -7,6 +7,7 @@ import axios from "axios";
 import zxcvbn from "zxcvbn";
 import { BsEye } from "react-icons/bs";
 import { BsEyeSlash } from "react-icons/bs";
+import gsap from "gsap";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");

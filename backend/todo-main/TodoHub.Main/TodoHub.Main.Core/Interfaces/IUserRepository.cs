@@ -14,5 +14,6 @@ namespace TodoHub.Main.Core.Interfaces
         Task<List<UserDTO>> GetUsersAsyncRepo();
         Task<UserDTO> GetMeRepo(Guid id);
         Task<bool> IsUserAdminRepo(Guid id);
+        Task AddGoogleUserAsyncRepo(UserGoogleDTO user);
     }
 }

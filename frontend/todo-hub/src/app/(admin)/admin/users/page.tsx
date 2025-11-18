@@ -28,8 +28,10 @@ export default function AdminPage() {
         (usersData.length > 0 ? (
           <UserList usersData={usersData} onDelete={handleDeleteUser} />
         ) : (
-          <div className=" flex items-center justify-center bg-gray-50">
-            <LoadingUI />
+          <div className="w-[100vw - 30px] h-screen p-6 flex justify-center">
+            <div className="h-72 w-[550px]">
+              <LoadingUI />
+            </div>
           </div>
         ))}
     </>

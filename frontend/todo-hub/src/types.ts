@@ -18,4 +18,6 @@ export interface Profile {
   name: string;
   email: string;
   IsAdmin: boolean;
+  authProvider: string;
+  pictureUrl: string;
 }

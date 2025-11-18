@@ -43,10 +43,7 @@ namespace TodoHub.Main.DataAccess.Repository
         public async Task<RefreshTokenEntity?> GetTokenRepo(string refreshToken)
         {
             var res = await _context.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == refreshToken);
-            if (res == null)
-            {
-                return null;
-            }
+            if (res == null) return null;
             return res;
         }
 
@@ -61,13 +58,18 @@ namespace TodoHub.Main.DataAccess.Repository
         public async Task RefreshTokenRepo(string refreshToken, string newToken, Guid userId)
         {
             // revoke old token
-            var res = await _context.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == refreshToken);
-            if (res == null)
+            var token = await _context.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash.Equals(refreshToken));
+            if (token == null)
             {
                 return;
             }
-            res.Revoked = DateTime.UtcNow;
-            res.ReplacedByToken = newToken;
+            while (token!.ReplacedByToken != null)
+            {
+                token = await _context.RefreshTokens
+                    .FirstOrDefaultAsync(t => t.TokenHash == token.ReplacedByToken);
+            }
+            token.Revoked = DateTime.UtcNow;
+            token.ReplacedByToken = newToken;
             // add new token
             var entity = new RefreshTokenEntity
             {
@@ -102,12 +104,20 @@ namespace TodoHub.Main.DataAccess.Repository
         // is Refresh Token valid?
         public async Task<bool> isRefreshTokenValidRepo(string refreshToken)
         {
-            var token = await _context.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash.Equals(refreshToken));
+            var token = await _context.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == refreshToken);
+
+            while (token?.ReplacedByToken != null)
+            {
+                token = await _context.RefreshTokens
+                    .FirstOrDefaultAsync(t => t.TokenHash == token.ReplacedByToken);
+            }
+
             Log.Information($"[REFRESH CHECK] Token expires at: {token?.Expires:o}, Now: {DateTime.UtcNow:o}");
             Log.Information($"[REFRESH CHECK HASH] Searching for: {refreshToken}, Found: {token?.TokenHash}");
-            if (token == null) return false;
-            if (token.Expires <= DateTime.UtcNow.AddSeconds(-10)) return false;
-            return true;
+
+            return token != null
+                && token.ReplacedByToken == null
+                && token.Expires > DateTime.UtcNow.AddSeconds(-10);
         }
     }
 }

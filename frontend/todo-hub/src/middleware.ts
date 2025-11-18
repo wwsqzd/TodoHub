@@ -6,7 +6,6 @@ export function middleware(request: NextRequest) {
   
   const token = request.cookies.get("accessToken")?.value;
 
-
   const isAuthPage = request.nextUrl.pathname.startsWith("/auth/login") 
                   || request.nextUrl.pathname.startsWith("/auth/register");
 

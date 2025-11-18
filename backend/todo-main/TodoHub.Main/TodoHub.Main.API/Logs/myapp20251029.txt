@@ -1,2 +1,0 @@
-2025-10-29 16:42:36 [INF] Old tokens deleted
-2025-10-29 16:42:38 [INF] The user vlad@gmail.com has logged in.

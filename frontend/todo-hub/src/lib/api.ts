@@ -39,10 +39,12 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       try {
         const res = await refreshToken();
+        console.log(res);
         document.cookie = `accessToken=${res.value.token}; path=/;`;
         originalRequest.headers["Authorization"] = `Bearer ${res.value.token}`;
         return api.request(originalRequest); // retry
       } catch (err) {
+        console.log(err);
         document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
         window.location.href = "/auth/login"; 
         return Promise.reject(err);
@@ -88,6 +90,11 @@ export const login = async (
     if (err instanceof Error) throw err;
     throw new Error("Unknown error");
   }
+};
+
+// login with google function
+export const loginWithGoogle = async () => {
+  window.location.href = `${API_URL}/auth/login/google`;
 };
 
 // register function
