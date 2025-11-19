@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { login, loginWithGoogle } from "@/lib/api";
+import { login, loginWithGitHub, loginWithGoogle } from "@/lib/api";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
@@ -82,6 +82,18 @@ export default function LoginPage() {
     }
   };
 
+  const handleLoginWithGitHub = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await loginWithGitHub();
+    } catch (err: unknown) {
+      console.error("GitHub login failed:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div ref={loginRef} className="flex flex-col items-center">
       <h1 className="text-2xl font-bold">Login</h1>
@@ -89,7 +101,7 @@ export default function LoginPage() {
         <div className="p-1 cursor-pointer" onClick={handleLoginWithGoogle}>
           <FcGoogle size={32} />
         </div>
-        <div className="p-1 cursor-pointer">
+        <div className="p-1 cursor-pointer" onClick={handleLoginWithGitHub}>
           <FaGithub size={30} />
         </div>
       </div>

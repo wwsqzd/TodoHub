@@ -97,6 +97,11 @@ export const loginWithGoogle = async () => {
   window.location.href = `${API_URL}/auth/login/google`;
 };
 
+// login with gitHub function
+export const loginWithGitHub = async () => {
+  window.location.href = `${API_URL}/auth/login/github`;
+}
+
 // register function
 export const register = async (data: { name: string; email: string, password: string, confirmPassword: string }) => 
 {
