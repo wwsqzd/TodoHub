@@ -41,6 +41,17 @@ namespace TodoHub.Main.DataAccess.Repository
             await _context.SaveChangesAsync();
         }
 
+        // Add GitHub User
+        public async Task AddGitHubUserAsyncRepo(UserGitHubDTO user)
+        {
+            var entity = _mapper.Map<UserEntity>(user);
+            entity.AuthProvider = "GitHub";
+            entity.GitHubId = user.GitHubId;
+
+            await _context.Users.AddAsync(entity);
+            await _context.SaveChangesAsync();
+        }
+
         // Get all users
         public async Task<List<UserDTO>> GetUsersAsyncRepo()
         {

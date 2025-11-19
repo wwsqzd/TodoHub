@@ -14,11 +14,13 @@ namespace TodoHub.Main.API.Controllers
     {
         private readonly IUserService _userService;
         private readonly IGoogleAuthService _googleAuthService;
+        private readonly IGitHubAuthService _gitHubAuthService;
 
-        public AuthController(IUserService userService, IGoogleAuthService googleService)
+        public AuthController(IUserService userService, IGoogleAuthService googleService, IGitHubAuthService gitHubAuthService)
         {
             _userService = userService;
             _googleAuthService = googleService;
+            _gitHubAuthService = gitHubAuthService;
         }
 
         // "auth/login"
@@ -37,7 +39,7 @@ namespace TodoHub.Main.API.Controllers
             if (token != null)
             {
                 //Logger
-                Log.Information($"The user {dto.Email} has logged in.");
+                //Log.Information($"The user {dto.Email} has logged in.");
 
                 // Refresh Token
                 Response.Cookies.Append("refreshToken", token, new CookieOptions
@@ -57,7 +59,7 @@ namespace TodoHub.Main.API.Controllers
         // Google Auth
         [HttpGet("login/google")]
         [EnableRateLimiting("LoginPolicy")]
-        public async Task<IActionResult> LoginGoogle()
+        public IActionResult LoginGoogle()
         {
             var redirectUrl = _googleAuthService.GetGoogleLoginUrl();
             return Redirect(redirectUrl);
@@ -95,6 +97,48 @@ namespace TodoHub.Main.API.Controllers
             return Redirect("http://localhost:3000/profile");
         }
 
+
+        //GitHub Auth
+        [HttpGet("login/github")]
+        public IActionResult LoginGitHub()
+        {
+            var redirectUrl = _gitHubAuthService.GetGitHubLoginUrl();
+            return Redirect(redirectUrl);
+        }
+
+        // GitHub Auth
+        [HttpGet("login/github/callback")]
+        public async Task<IActionResult> LoginGitHubCallBack([FromQuery] string code)
+        {
+            if (string.IsNullOrEmpty(code))
+            {
+                return BadRequest("No code received from Github");
+            }
+
+            var (refreshToken, accessToken) = await _gitHubAuthService.HandleGitHubCallbackAsync(code);
+            if (accessToken.Success == false) return BadRequest($"{accessToken.Error}");
+            if (refreshToken == "" && accessToken.Value.Token == null) return Unauthorized();
+
+            Response.Cookies.Append("accessToken", accessToken.Value.Token, new CookieOptions
+            {
+                HttpOnly = false,
+                Secure = true,
+                Path = "/",
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddHours(2),
+            });
+            Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                Path = "/",
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddDays(7)
+            });
+
+            return Redirect("http://localhost:3000/profile");
+        }
+
         //"auth/register"
         [HttpPost("register")]
         [EnableRateLimiting("SignUpPolicy")]
@@ -108,7 +152,7 @@ namespace TodoHub.Main.API.Controllers
             // Logger 
             if (result.Success)
             {
-                Log.Information($"The user {result.Value.Email} has registered in.");
+                //Log.Information($"The user {result.Value.Email} has registered in.");
             }
             return Created();
         }

@@ -99,7 +99,8 @@ try
     builder.Services.AddHttpClient();
     builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 
-    
+    // github 
+    builder.Services.AddScoped<IGitHubAuthService, GitHubAuthService>();
 
     // rebbitmq
 

@@ -187,7 +187,7 @@ namespace TodoHub.Main.Core.Services
             var user = await _userRepository.GetMeRepo(userId);
             if (user == null)
             {
-                return Result<UserDTO>.Fail("User does not exist");    
+                return Result<UserDTO>.Fail("User does not exist");
             }
             return Result<UserDTO>.Ok(user);
             

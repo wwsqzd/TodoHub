@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Configuration;
-using Serilog;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Text.Json;
@@ -25,6 +24,7 @@ namespace TodoHub.Main.Core.Services
             _userRepository = userRepository;
         }
 
+        // google auth link
         public string GetGoogleLoginUrl()
         {
             var config = new ConfigurationBuilder()
@@ -47,6 +47,7 @@ namespace TodoHub.Main.Core.Services
                    $"&state={state}";
         }
 
+        // google auth callback
         public async Task<(string token, Result<LoginResponseDTO>)> HandleGoogleCallbackAsync(string code)
         {
             var config = new ConfigurationBuilder()
