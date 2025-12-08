@@ -10,7 +10,7 @@ import { translations } from "@/lib/dictionary";
 
 export default function Navbar() {
   const { accessToken, isAdmin } = useAuth();
-  const { language, setLanguage } = useLanguage();
+  const { language } = useLanguage();
   const t = translations[language];
   const logo = useRef<HTMLDivElement>(null);
   const nav1 = useRef<HTMLDivElement>(null);
@@ -114,7 +114,7 @@ export default function Navbar() {
       </div>
 
       {/* Desktop Nav - Center */}
-      <div className="hidden sm:flex gap-10 items-center flex-1 justify-center">
+      <div className="hidden sm:flex gap-10 items-center flex-1 justify-center max-w-lg">
         {!accessToken ? (
           <>
             <Link href="/" className="text-black font-bold text-lg">
@@ -174,56 +174,8 @@ export default function Navbar() {
         )}
       </div>
 
-      {/* Desktop Language Switcher - Right */}
-      <div className="hidden sm:flex gap-2 border-l border-gray-300 pl-10 flex-shrink-0 mr-6">
-        <button
-          onClick={() => setLanguage("en")}
-          className={`px-3 py-1 rounded cursor-pointer font-bold transition ${
-            language === "en"
-              ? "bg-black text-white"
-              : "bg-gray-100 text-black hover:bg-gray-200"
-          }`}
-        >
-          Eng
-        </button>
-        <button
-          onClick={() => setLanguage("de")}
-          className={`px-3 py-1 rounded cursor-pointer font-bold transition ${
-            language === "de"
-              ? "bg-black text-white"
-              : "bg-gray-100 text-black hover:bg-gray-200"
-          }`}
-        >
-          De
-        </button>
-      </div>
-
       {/* Mobile Controls - Right */}
       <div className="flex items-center gap-3 ml-auto sm:hidden flex-shrink-0">
-        {/* Mobile Language Switcher */}
-        <div className="flex gap-1">
-          <button
-            onClick={() => setLanguage("en")}
-            className={`px-2 py-1 text-xs font-bold rounded transition ${
-              language === "en"
-                ? "bg-black text-white"
-                : "bg-gray-100 text-black"
-            }`}
-          >
-            EN
-          </button>
-          <button
-            onClick={() => setLanguage("de")}
-            className={`px-2 py-1 text-xs font-bold rounded transition ${
-              language === "de"
-                ? "bg-black text-white"
-                : "bg-gray-100 text-black"
-            }`}
-          >
-            DE
-          </button>
-        </div>
-
         {/* Mobile Menu Button */}
         <div className="w-[36px] h-[36px] m-2">
           <button
