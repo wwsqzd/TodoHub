@@ -42,6 +42,7 @@ export default function ButtonUI({
             font-semibold 
             py-2
             rounded
+            text-sm
             transition
             cursor-pointer`}
       onClick={action}

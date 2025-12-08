@@ -7,6 +7,8 @@ import { useModifyTodo } from "@/hooks/useModifyTodo";
 import DeleteButtonUI from "../ui/DeleteButtonUI";
 import gsap from "gsap";
 import { useRef } from "react";
+import { useLanguage } from "@/context/LanguageContext";
+import { translations } from "@/lib/dictionary";
 
 type Props = {
   todo: Todo;
@@ -20,6 +22,9 @@ export default function TodoItem({ todo, onDelete, onModify, onEdit }: Props) {
   const { modify } = useModifyTodo();
 
   const todoRef = useRef<HTMLDivElement>(null);
+
+  const { language } = useLanguage();
+  const t = translations[language];
 
   const handleDelete = async (id: string) => {
     await gsap.to(todoRef.current, {
@@ -81,7 +86,7 @@ export default function TodoItem({ todo, onDelete, onModify, onEdit }: Props) {
         )}
 
         <p className="text-xs text-gray-400">
-          created: {new Date(todo.createdDate).toLocaleDateString()}
+          {t.created}: {new Date(todo.createdDate).toLocaleDateString()}
         </p>
       </div>
       <div className="flex justify-between gap-3 items-center">

@@ -1,17 +1,29 @@
 "use client";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { RefObject, useRef } from "react";
+import { useLanguage } from "@/context/LanguageContext";
+import { RefObject, useRef, useState, useEffect } from "react";
+import { HiMenu } from "react-icons/hi";
+import { HiX } from "react-icons/hi";
 import gsap from "gsap";
+import { translations } from "@/lib/dictionary";
 
 export default function Navbar() {
   const { accessToken, isAdmin } = useAuth();
+  const { language, setLanguage } = useLanguage();
+  const t = translations[language];
   const logo = useRef<HTMLDivElement>(null);
   const nav1 = useRef<HTMLDivElement>(null);
   const nav2 = useRef<HTMLDivElement>(null);
   const nav3 = useRef<HTMLDivElement>(null);
   const nav4 = useRef<HTMLDivElement>(null);
   const nav5 = useRef<HTMLDivElement>(null);
+
+  // Mobile menu refs & state
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuPanel = useRef<HTMLDivElement | null>(null);
+  const menuBtn = useRef<HTMLButtonElement | null>(null);
+  const tl = useRef<GSAPTimeline | null>(null);
 
   const handleEnter = (el: RefObject<HTMLDivElement | null>) => {
     gsap.to(el.current, {
@@ -27,17 +39,82 @@ export default function Navbar() {
     });
   };
 
+  useEffect(() => {
+    if (!menuPanel.current) return;
+
+    // create timeline once
+    if (!tl.current) {
+      const panel = menuPanel.current;
+      const items = panel.querySelectorAll(".mobile-nav-item");
+
+      tl.current = gsap.timeline({ paused: true });
+      tl.current.to(panel, {
+        duration: 0.3,
+        height: "auto",
+        opacity: 1,
+        ease: "power2.out",
+        overwrite: true,
+      });
+      tl.current.from(
+        items,
+        {
+          y: -8,
+          opacity: 0,
+          duration: 0.25,
+          stagger: 0.05,
+          ease: "power2.out",
+        },
+        "-=0.15"
+      );
+
+      // set initial closed state (height 0, hidden)
+      gsap.set(menuPanel.current, {
+        height: 0,
+        opacity: 0,
+        overflow: "hidden",
+      });
+    }
+
+    // open/close based on menuOpen
+    if (menuOpen) {
+      tl.current!.play();
+    } else {
+      tl.current!.reverse();
+    }
+  }, [menuOpen]);
+
+  // click outside to close
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      const target = e.target as Node;
+      if (!menuOpen) return;
+      if (
+        menuPanel.current &&
+        !menuPanel.current.contains(target) &&
+        menuBtn.current &&
+        !menuBtn.current.contains(target)
+      ) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [menuOpen]);
+
   return (
-    <nav className="w-full h-[110px] justify-between flex bg-white text-white border-b border-gray-200 border-solid">
+    <nav className="w-full h-[110px] flex items-center bg-white border-b border-gray-200 border-solid relative z-50 justify-between">
+      {/* Logo - Left */}
       <div
         ref={logo}
         onMouseEnter={() => handleEnter(logo)}
         onMouseLeave={() => handleLeave(logo)}
-        className="flex items-center cursor-pointer"
+        className="flex items-center cursor-pointer flex-shrink-0"
       >
         <h1 className="text-4xl font-bold text-black m-6">TodoHub</h1>
       </div>
-      <div className="flex gap-10 items-center m-6 pr-10">
+
+      {/* Desktop Nav - Center */}
+      <div className="hidden sm:flex gap-10 items-center flex-1 justify-center">
         {!accessToken ? (
           <>
             <Link href="/" className="text-black font-bold text-lg">
@@ -46,7 +123,7 @@ export default function Navbar() {
                 onMouseEnter={() => handleEnter(nav1)}
                 onMouseLeave={() => handleLeave(nav1)}
               >
-                Home
+                {t.home}
               </div>
             </Link>
             <Link href="/auth/login" className="text-black font-bold text-lg">
@@ -55,7 +132,7 @@ export default function Navbar() {
                 onMouseEnter={() => handleEnter(nav2)}
                 onMouseLeave={() => handleLeave(nav2)}
               >
-                Login
+                {t.login}
               </div>
             </Link>
           </>
@@ -67,7 +144,7 @@ export default function Navbar() {
                 onMouseEnter={() => handleEnter(nav3)}
                 onMouseLeave={() => handleLeave(nav3)}
               >
-                Dashboard
+                {t.dashboard}
               </div>
             </Link>
             {isAdmin && (
@@ -80,7 +157,7 @@ export default function Navbar() {
                   onMouseEnter={() => handleEnter(nav4)}
                   onMouseLeave={() => handleLeave(nav4)}
                 >
-                  Admin
+                  {t.admin}
                 </div>
               </Link>
             )}
@@ -90,11 +167,136 @@ export default function Navbar() {
                 onMouseEnter={() => handleEnter(nav5)}
                 onMouseLeave={() => handleLeave(nav5)}
               >
-                Profile
+                {t.profile}
               </div>
             </Link>
           </>
         )}
+      </div>
+
+      {/* Desktop Language Switcher - Right */}
+      <div className="hidden sm:flex gap-2 border-l border-gray-300 pl-10 flex-shrink-0 mr-6">
+        <button
+          onClick={() => setLanguage("en")}
+          className={`px-3 py-1 rounded cursor-pointer font-bold transition ${
+            language === "en"
+              ? "bg-black text-white"
+              : "bg-gray-100 text-black hover:bg-gray-200"
+          }`}
+        >
+          Eng
+        </button>
+        <button
+          onClick={() => setLanguage("de")}
+          className={`px-3 py-1 rounded cursor-pointer font-bold transition ${
+            language === "de"
+              ? "bg-black text-white"
+              : "bg-gray-100 text-black hover:bg-gray-200"
+          }`}
+        >
+          De
+        </button>
+      </div>
+
+      {/* Mobile Controls - Right */}
+      <div className="flex items-center gap-3 ml-auto sm:hidden flex-shrink-0">
+        {/* Mobile Language Switcher */}
+        <div className="flex gap-1">
+          <button
+            onClick={() => setLanguage("en")}
+            className={`px-2 py-1 text-xs font-bold rounded transition ${
+              language === "en"
+                ? "bg-black text-white"
+                : "bg-gray-100 text-black"
+            }`}
+          >
+            EN
+          </button>
+          <button
+            onClick={() => setLanguage("de")}
+            className={`px-2 py-1 text-xs font-bold rounded transition ${
+              language === "de"
+                ? "bg-black text-white"
+                : "bg-gray-100 text-black"
+            }`}
+          >
+            DE
+          </button>
+        </div>
+
+        {/* Mobile Menu Button */}
+        <div className="w-[36px] h-[36px] m-2">
+          <button
+            ref={menuBtn}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((s) => !s)}
+            className="text-black"
+          >
+            {menuOpen ? (
+              <HiX size={36} className="cursor-pointer" />
+            ) : (
+              <HiMenu size={36} className="cursor-pointer" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Menu Panel */}
+      <div
+        ref={menuPanel}
+        className="sm:hidden absolute left-0 right-0 top-[110px] bg-white shadow-md overflow-hidden"
+      >
+        <div className="flex flex-col py-4">
+          {!accessToken ? (
+            <>
+              <Link href="/">
+                <div
+                  className="mobile-nav-item px-6 py-3 text-black font-bold"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {t.home}
+                </div>
+              </Link>
+              <Link href="/auth/login">
+                <div
+                  className="mobile-nav-item px-6 py-3 text-black font-bold"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {t.login}
+                </div>
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link href="/dashboard">
+                <div
+                  className="mobile-nav-item px-6 py-3 text-black font-bold"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {t.dashboard}
+                </div>
+              </Link>
+              {isAdmin && (
+                <Link href="/admin/users">
+                  <div
+                    className="mobile-nav-item px-6 py-3 text-black font-bold"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {t.admin}
+                  </div>
+                </Link>
+              )}
+              <Link href="/profile">
+                <div
+                  className="mobile-nav-item px-6 py-3 text-black font-bold"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {t.profile}
+                </div>
+              </Link>
+            </>
+          )}
+        </div>
       </div>
     </nav>
   );
