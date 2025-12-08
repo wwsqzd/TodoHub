@@ -8,6 +8,8 @@ import axios from "axios";
 import gsap from "gsap";
 import { FcGoogle } from "react-icons/fc";
 import { FaGithub } from "react-icons/fa6";
+import { useLanguage } from "@/context/LanguageContext";
+import { translations } from "@/lib/dictionary";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -17,6 +19,9 @@ export default function LoginPage() {
   const { setAccessToken } = useAuth();
 
   const loginRef = useRef<HTMLDivElement>(null);
+
+  const { language } = useLanguage();
+  const t = translations[language];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,7 +116,7 @@ export default function LoginPage() {
       >
         <input
           type="email"
-          placeholder="Email"
+          placeholder={t.email}
           autoComplete="email"
           required
           value={email}
@@ -120,7 +125,7 @@ export default function LoginPage() {
         />
         <input
           type="password"
-          placeholder="Password"
+          placeholder={t.password}
           autoComplete="current-password"
           required
           value={password}
@@ -129,12 +134,12 @@ export default function LoginPage() {
         />
         <div className="text-sm text-gray-600 mb-4 text-center">
           <p>
-            Don&apos;t have an account?{" "}
+            {t.dontHaveAccount}{" "}
             <Link
               href="/auth/register"
               className="text-blue-600 hover:underline"
             >
-              Sign up
+              {t.signUp}
             </Link>
           </p>
         </div>
@@ -142,7 +147,7 @@ export default function LoginPage() {
           type="submit"
           className="bg-blue-600 text-white rounded py-2 font-semibold cursor-pointer"
         >
-          {loading ? "Loading..." : "Login"}
+          {loading ? "Loading..." : <>{t.login}</>}
         </button>
         <div className="text-sm text-gray-600 text-center">
           {error && <p className="text-red-500 mb-2">{error}</p>}

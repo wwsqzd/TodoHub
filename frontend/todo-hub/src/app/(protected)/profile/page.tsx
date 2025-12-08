@@ -4,16 +4,22 @@ import { useEffect, useState } from "react";
 import { getMe, logOut } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
-import { CiUser } from "react-icons/ci";
+
 import LoadingUI from "@/components/ui/LoadingUI";
 import { Profile } from "@/types";
-import Image from "next/image";
+
+import { useLanguage } from "@/context/LanguageContext";
+import { translations } from "@/lib/dictionary";
+import UserDetailsPart from "@/components/features/UserDetailsPart";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile>();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { accessToken, setAccessToken } = useAuth();
+
+  const { language } = useLanguage();
+  const t = translations[language];
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,33 +63,18 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen flex flex-col items-center">
       {error && <p className="text-red-500">{error}</p>}
-      <div className="bg-white min-h-44 rounded shadow p-6 w-full h-full max-w-md flex flex-col items-center justify-center m-10 relative">
+      <div className="bg-white min-h-44 rounded shadow p-3 sm:w-[600px] w-[80vw] h-full  flex flex-col items-center justify-center m-10 relative">
         {loading ? (
           <LoadingUI />
         ) : profile ? (
           <>
-            <h1 className="mb-6 text-2xl font-bold">Account Profile</h1>
-            <div className="w-[70px] h-[70px]">
-              {profile.pictureUrl ? (
-                <Image
-                  src={profile.pictureUrl}
-                  alt="profile img"
-                  width={70}
-                  height={70}
-                />
-              ) : (
-                <CiUser className="w-full h-full text-gray-400" />
-              )}
-            </div>
-            <div className="w-full flex flex-col gap-2 mt-4">
-              <p className="text-left text-sm">Name: {profile.name}</p>
-              <p className="text-left text-sm">Email: {profile.email}</p>
-            </div>
+            <h1 className="mb-6 text-2xl font-bold">{t.accountProfile}</h1>
+            <UserDetailsPart profile={profile} />
             <button
               className="mt-4 bg-red-800 text-white rounded py-2 px-4 font-semibold cursor-pointer"
               onClick={handleLogout}
             >
-              Log out
+              {t.logout}
             </button>
           </>
         ) : (

@@ -24,7 +24,7 @@ export default function UserItem({ user, onDelete }: Props) {
   return (
     <div
       key={user.id}
-      className="bg-white rounded-lg shadow-md p-6 flex justify-between border border-gray-200 hover:shadow-lg transition"
+      className="bg-white rounded-lg shadow-md p-6 flex justify-between border border-gray-200 hover:shadow-lg transition sm:w-full w-sm"
     >
       <div className="flex flex-col">
         <div className="font-bold text-xl mb-2 text-gray-900">{user.name}</div>

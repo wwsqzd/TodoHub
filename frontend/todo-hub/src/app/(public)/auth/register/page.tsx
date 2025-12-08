@@ -8,6 +8,8 @@ import zxcvbn from "zxcvbn";
 import { BsEye } from "react-icons/bs";
 import { BsEyeSlash } from "react-icons/bs";
 import gsap from "gsap";
+import { useLanguage } from "@/context/LanguageContext";
+import { translations } from "@/lib/dictionary";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -26,6 +28,10 @@ export default function RegisterPage() {
     "bg-lime-500",
     "bg-green-600",
   ];
+
+  const { language } = useLanguage();
+  const t = translations[language];
+
   const labels = ["Weak", "Fair", "Good", "Strong", "Very Strong"];
   const strength = zxcvbn(password).score;
 
@@ -94,14 +100,14 @@ export default function RegisterPage() {
 
   return (
     <div ref={registerRef} className="flex flex-col items-center">
-      <h1 className="mb-6 text-2xl font-bold">Register</h1>
+      <h1 className="mb-6 text-2xl font-bold">{t.signUp}</h1>
       <form
         onSubmit={handleSubmit}
         className="flex flex-col gap-4 w-full max-w-xs"
       >
         <input
           type="text"
-          placeholder="Name"
+          placeholder={t.name}
           autoComplete="name"
           required
           value={name}
@@ -110,7 +116,7 @@ export default function RegisterPage() {
         />
         <input
           type="email"
-          placeholder="Email"
+          placeholder={t.email}
           autoComplete="email"
           required
           value={email}
@@ -120,7 +126,7 @@ export default function RegisterPage() {
         <div className="relative">
           <input
             type={showPassword ? "text" : "password"}
-            placeholder="Password"
+            placeholder={t.password}
             autoComplete="new-password"
             required
             value={password}
@@ -139,7 +145,7 @@ export default function RegisterPage() {
         <div className="relative">
           <input
             type={showConfirm ? "text" : "password"}
-            placeholder="Confirm password"
+            placeholder={t.confirmPassword}
             autoComplete="new-password"
             required
             value={confirm}
@@ -169,12 +175,12 @@ export default function RegisterPage() {
           )}
           <div className="text-sm text-gray-600 mb-4 text-center">
             <p>
-              Already have an account?{" "}
+              {t.alreadyHaveAccount}{" "}
               <Link
                 href="/auth/login"
                 className="text-blue-600 hover:underline"
               >
-                Login
+                {t.login}
               </Link>
             </p>
           </div>
@@ -184,7 +190,7 @@ export default function RegisterPage() {
           type="submit"
           className="bg-blue-600 text-white rounded py-2 font-semibold cursor-pointer"
         >
-          {loading ? "Loading..." : "Register"}
+          {loading ? "Loading..." : <>{t.signUp}</>}
         </button>
         <div className="text-sm text-gray-600 text-center">
           {error && <p className="text-red-500 mb-2">{error}</p>}
