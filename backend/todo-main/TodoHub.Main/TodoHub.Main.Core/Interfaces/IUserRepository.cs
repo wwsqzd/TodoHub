@@ -16,6 +16,7 @@ namespace TodoHub.Main.Core.Interfaces
         Task<bool> IsUserAdminRepo(Guid id);
         Task AddGoogleUserAsyncRepo(UserGoogleDTO user);
         Task AddGitHubUserAsyncRepo(UserGitHubDTO user);
+        Task<bool> ChangeUserLanguageRepo(string language, Guid id);
 
     }
 }

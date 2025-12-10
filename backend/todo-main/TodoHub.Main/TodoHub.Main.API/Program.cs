@@ -84,15 +84,19 @@ try
     builder.Services.AddScoped<IJwtService, JwtService>();
     builder.Services.AddScoped<IPasswordService, PasswordService>();
     builder.Services.AddScoped<IUserRepository, UserRepository>();
-    builder.Services.AddScoped<AbstractValidator<RegisterDTO>, RegisterDTOValidator>();
-    builder.Services.AddScoped<AbstractValidator<LoginDTO>, LoginDTOValidator>();
+    
 
     builder.Services.AddScoped<ITodoService, TodoService>();
     builder.Services.AddScoped<ITodoRepository, TodoRepository>();
 
     builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+    // validator
     builder.Services.AddScoped<AbstractValidator<CreateTodoDTO>, CreateTodoDTOValidator>();
     builder.Services.AddScoped<AbstractValidator<UpdateTodoDTO>, UpdateTodoDTOValidator>();
+    builder.Services.AddScoped<AbstractValidator<RegisterDTO>, RegisterDTOValidator>();
+    builder.Services.AddScoped<AbstractValidator<LoginDTO>, LoginDTOValidator>();
+    builder.Services.AddScoped<AbstractValidator<ChangeLanguageDTO>, UpdateUserLanguageDTOValidator>();
+
     builder.Services.AddSingleton<ITodoCacheService, TodoCacheService>();
 
     // google
@@ -224,6 +228,9 @@ try
                 Window = TimeSpan.FromMinutes(1)
             });
         });
+
+        
+
 
         options.RejectionStatusCode = 429;
         options.OnRejected = async (context, cancellationToken) =>

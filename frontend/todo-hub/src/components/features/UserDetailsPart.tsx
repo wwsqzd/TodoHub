@@ -6,6 +6,7 @@ import Image from "next/image";
 import { CiUser } from "react-icons/ci";
 import { useLanguage } from "@/context/LanguageContext";
 import { translations } from "@/lib/dictionary";
+import { ChangeUserlanguage } from "@/lib/api";
 
 interface Props {
   profile?: Profile;
@@ -16,6 +17,14 @@ export default function UserDetailsPart({ profile }: Props) {
 
   const { language, setLanguage } = useLanguage();
   const t = translations[language];
+
+  const changelanguage = async (lang: "en" | "de") => {
+    const res = await ChangeUserlanguage(lang);
+    console.log(res);
+    if (res.success) {
+      setLanguage(lang);
+    }
+  };
 
   return (
     <div className="w-full">
@@ -91,7 +100,7 @@ export default function UserDetailsPart({ profile }: Props) {
                   </label>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setLanguage("en")}
+                      onClick={() => changelanguage("en")}
                       className={`px-4 py-2 rounded cursor-pointer font-bold transition text-sm ${
                         language === "en"
                           ? "bg-black text-white"
@@ -101,7 +110,7 @@ export default function UserDetailsPart({ profile }: Props) {
                       English
                     </button>
                     <button
-                      onClick={() => setLanguage("de")}
+                      onClick={() => changelanguage("de")}
                       className={`px-4 py-2 rounded cursor-pointer font-bold transition text-sm ${
                         language === "de"
                           ? "bg-black text-white"

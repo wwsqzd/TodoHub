@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using TodoHub.Main.Core.DTOs.Request;
 using TodoHub.Main.Core.DTOs.Response;
 using TodoHub.Main.Core.Interfaces;
@@ -112,6 +113,24 @@ namespace TodoHub.Main.API.Controllers
 
             var res = await _userService.IsUserAdmin(userId);
             if (!res.Success) {
+                return BadRequest();
+            }
+            return Ok(res);
+        }
+
+
+        [HttpPatch("profile/language")]
+        [Authorize]
+        public async Task<IActionResult> ChangeUserLanguage([FromBody] ChangeLanguageDTO language_dto)
+        {
+            // take the ID from the token
+            var userIdClaim = User.FindFirst("UserId")?.Value;
+            if (userIdClaim is null || !Guid.TryParse(userIdClaim, out var userId))
+                return Unauthorized("Invalid token");
+
+            var res = await _userService.ChangeUserLanguage(language_dto, userId);
+            if (!res.Success)
+            {
                 return BadRequest();
             }
             return Ok(res);

@@ -20,4 +20,5 @@ export interface Profile {
   IsAdmin: boolean;
   authProvider: string;
   pictureUrl: string;
+  interface_language?: "en" | "de";
 }

@@ -18,6 +18,7 @@ namespace TodoHub.Main.Core.Services
         private readonly AbstractValidator<RegisterDTO> _register_validator;
         private readonly AbstractValidator<LoginDTO> _login_validator;
         private readonly IRefreshTokenRepository _refreshTokenRepository;
+        private readonly AbstractValidator<ChangeLanguageDTO> _language_validator;
 
         public UserService(
             IPasswordService passwordService,
@@ -25,7 +26,8 @@ namespace TodoHub.Main.Core.Services
             IUserRepository userRepository, 
             AbstractValidator<RegisterDTO> register_validator, 
             AbstractValidator<LoginDTO> login_validator, 
-            IRefreshTokenRepository refreshTokenRepository
+            IRefreshTokenRepository refreshTokenRepository,
+            AbstractValidator<ChangeLanguageDTO> language_validator
             )
         {
             _passwordService = passwordService;
@@ -34,6 +36,7 @@ namespace TodoHub.Main.Core.Services
             _register_validator = register_validator;
             _login_validator = login_validator;
             _refreshTokenRepository = refreshTokenRepository;
+            _language_validator = language_validator;
         }
 
         // register user
@@ -219,6 +222,19 @@ namespace TodoHub.Main.Core.Services
             {
                 return Result<bool>.Fail($"{ex}");
             }
+        }
+
+        public async Task<Result<bool>> ChangeUserLanguage(ChangeLanguageDTO language_dto, Guid user_id)
+        {
+            ValidationResult validationResult = _language_validator.Validate(language_dto);
+
+            if (!validationResult.IsValid)
+            {
+                return Result<bool>.Fail("Incorrect Data Entry");
+            }
+
+            var res = await _userRepository.ChangeUserLanguageRepo(language_dto.Language, user_id);
+            return Result<bool>.Ok(res);
         }
     }
 }

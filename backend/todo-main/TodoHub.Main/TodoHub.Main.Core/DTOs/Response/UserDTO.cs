@@ -12,8 +12,8 @@ namespace TodoHub.Main.Core.DTOs.Response
 
         public DateTime CreatedAt { get; set; }
         public string AuthProvider { get; set; } = string.Empty;
-        public string GoogleId { get; set; } = string.Empty;
         public string? PictureUrl { get; set; } = null;
+        public string Interface_Language { get; set; } = string.Empty;
 
     }
 }
