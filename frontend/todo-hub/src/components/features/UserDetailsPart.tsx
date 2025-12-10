@@ -14,7 +14,7 @@ interface Props {
 export default function UserDetailsPart({ profile }: Props) {
   const [active, setActive] = useState<"info" | "settings">("info");
 
-  const { language } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const t = translations[language];
 
   return (
@@ -49,7 +49,7 @@ export default function UserDetailsPart({ profile }: Props) {
           {active === "info" ? (
             <div>
               <div className="flex  items-center gap-4">
-                <div className="w-[70px] h-[70px] overflow-hidden bg-white flex items-center justify-center">
+                <div className="w-[70px] h-[70px] border-2 border-gray-200 overflow-hidden bg-white flex items-center justify-center">
                   {profile?.pictureUrl ? (
                     <Image
                       src={profile.pictureUrl}
@@ -84,6 +84,33 @@ export default function UserDetailsPart({ profile }: Props) {
                     Email
                   </label>
                   <p>{profile?.email}</p>
+                </div>
+                <div className="border-t pt-4">
+                  <label className="text-sm block mb-3 text-gray-600">
+                    Language
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setLanguage("en")}
+                      className={`px-4 py-2 rounded cursor-pointer font-bold transition text-sm ${
+                        language === "en"
+                          ? "bg-black text-white"
+                          : "bg-gray-100 text-black hover:bg-gray-200"
+                      }`}
+                    >
+                      English
+                    </button>
+                    <button
+                      onClick={() => setLanguage("de")}
+                      className={`px-4 py-2 rounded cursor-pointer font-bold transition text-sm ${
+                        language === "de"
+                          ? "bg-black text-white"
+                          : "bg-gray-100 text-black hover:bg-gray-200"
+                      }`}
+                    >
+                      Deutsch
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
