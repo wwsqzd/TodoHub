@@ -18,5 +18,6 @@ namespace TodoHub.Main.Core.Interfaces
         Task<(string token, Result<LoginResponseDTO>)> RefreshLoginAsync(string old_refresh_token);
         Task<Result<UserDTO>> GetMe(Guid id);
         Task<Result<bool>> IsUserAdmin(Guid id);
+        Task<Result<bool>> ChangeUserLanguage(ChangeLanguageDTO language_dto, Guid user_id);
     }
 }

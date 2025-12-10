@@ -18,7 +18,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const { accessToken, setAccessToken } = useAuth();
 
-  const { language } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const t = translations[language];
 
   useEffect(() => {
@@ -28,6 +28,12 @@ export default function ProfilePage() {
       }
       try {
         const res = await getMe();
+        console.log(res);
+        const lang = res.value?.interface_Language;
+        console.log(lang);
+        if (lang === "en" || lang === "de") {
+          setLanguage(lang);
+        }
         setProfile(res.value);
         setLoading(false);
       } catch (err: unknown) {
@@ -54,6 +60,7 @@ export default function ProfilePage() {
       document.cookie =
         "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
       setProfile(undefined);
+      localStorage.clear();
       window.location.href = "/auth/login";
     } catch (err) {
       console.error("Logout failed:", err);

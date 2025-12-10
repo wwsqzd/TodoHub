@@ -102,5 +102,14 @@ namespace TodoHub.Main.DataAccess.Repository
             if (user == null) return false;
             return user.IsAdmin;
         }
+
+        public async Task<bool> ChangeUserLanguageRepo(string language, Guid id)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(user => user.Id == id);
+            if (user == null) return false;
+            user.Interface_Language = language;
+            await _context.SaveChangesAsync();
+            return true;
+        }
     }
 }

@@ -13,5 +13,6 @@
         public string GoogleId { get; set; } = string.Empty;
         public string? PictureUrl { get; set; } = null;
         public string GitHubId { get; set; } = string.Empty;
+        public string Interface_Language { get; set; } = "en";
     }
 }

@@ -158,6 +158,11 @@ export const DeleteUser = async (id: string) => {
   return res.data;
 } 
 
+export const ChangeUserlanguage = async (language: string) => {
+  const res = await api.patch(`${API_URL}/profile/language`, {Language: language}, {withCredentials: true});
+  if (res.status !== 200) throw new Error("Error changing language");
+  return res.data;
+}
 
 
 
