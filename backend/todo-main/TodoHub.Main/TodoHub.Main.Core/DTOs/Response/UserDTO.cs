@@ -14,6 +14,8 @@ namespace TodoHub.Main.Core.DTOs.Response
         public string AuthProvider { get; set; } = string.Empty;
         public string? PictureUrl { get; set; } = null;
         public string Interface_Language { get; set; } = string.Empty;
+        public int Number_of_Todos { get; set; } = 0;
+        public double Average_completion_time { get; set; } = 0;
 
     }
 }

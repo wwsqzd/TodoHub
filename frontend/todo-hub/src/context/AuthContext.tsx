@@ -13,6 +13,8 @@ type AuthContextType = {
   setAccessToken: (token: string | null) => void;
   isAdmin?: boolean;
   setIsAdmin?: (isAdmin: boolean) => void;
+  loading?: boolean;
+  setLoading?: (loading: boolean) => void;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -20,11 +22,14 @@ const AuthContext = createContext<AuthContextType>({
   setAccessToken: () => {},
   isAdmin: false,
   setIsAdmin: () => {},
+  loading: true,
+  setLoading: () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const checkToken = async () => {
@@ -48,10 +53,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
     checkToken();
+    setLoading(false);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ accessToken, setAccessToken, isAdmin }}>
+    <AuthContext.Provider
+      value={{ accessToken, setAccessToken, isAdmin, loading }}
+    >
       {children}
     </AuthContext.Provider>
   );

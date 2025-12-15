@@ -14,5 +14,7 @@
         public string? PictureUrl { get; set; } = null;
         public string GitHubId { get; set; } = string.Empty;
         public string Interface_Language { get; set; } = "en";
+        public double Average_completion_time { get; set; } = 0;
+        public int Complated_Todo { get; set; } = 0;
     }
 }

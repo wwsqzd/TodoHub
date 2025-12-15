@@ -21,4 +21,6 @@ export interface Profile {
   authProvider: string;
   pictureUrl: string;
   interface_language?: "en" | "de";
+  number_of_Todos: number;
+  average_completion_time: number;
 }
