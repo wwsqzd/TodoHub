@@ -30,7 +30,6 @@ export default function ProfilePage() {
         const res = await getMe();
         console.log(res);
         const lang = res.value?.interface_Language;
-        console.log(lang);
         if (lang === "en" || lang === "de") {
           setLanguage(lang);
         }

@@ -85,6 +85,7 @@ namespace TodoHub.Main.DataAccess.Repository
             return todoDTOs;
         }
 
+        // Get Todos
         public async Task<List<TodoDTO>> GetTodosAsyncRepo(Guid UserId)
         {
             var todos = await _context.Todos
@@ -112,7 +113,20 @@ namespace TodoHub.Main.DataAccess.Repository
                 todo.Description = todo_to_update.Description;
 
             if (todo_to_update.IsCompleted.HasValue)
+            {
                 todo.IsCompleted = todo_to_update.IsCompleted.Value;
+                if (todo_to_update.IsCompleted.Value ==  true)
+                {
+                    var user = await _context.Users.FirstOrDefaultAsync(user => user.Id == todo.OwnerId);
+                    
+                    if (user != null)
+                    {
+                        var completionTime = (DateTime.UtcNow - todo.CreatedDate).TotalHours;
+                        user.Complated_Todo++;
+                        user.Average_completion_time = ((user.Average_completion_time * (user.Complated_Todo - 1)) + completionTime) / user.Complated_Todo;
+                    }
+                }
+            }   
 
             todo.UpdatedDate = DateTime.UtcNow;
             await _context.SaveChangesAsync();

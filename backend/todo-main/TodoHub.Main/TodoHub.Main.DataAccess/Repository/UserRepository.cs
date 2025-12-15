@@ -92,6 +92,7 @@ namespace TodoHub.Main.DataAccess.Repository
         {
             var user = await _context.Users.FindAsync(id);
             var userDto = _mapper.Map<UserDTO>(user);
+            userDto.Number_of_Todos = await _context.Todos.CountAsync(todo => todo.OwnerId == id);
             return userDto;
         }
 
@@ -103,6 +104,7 @@ namespace TodoHub.Main.DataAccess.Repository
             return user.IsAdmin;
         }
 
+        // Change Language in User
         public async Task<bool> ChangeUserLanguageRepo(string language, Guid id)
         {
             var user = await _context.Users.FirstOrDefaultAsync(user => user.Id == id);

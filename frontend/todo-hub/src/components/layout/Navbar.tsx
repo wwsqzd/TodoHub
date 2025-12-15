@@ -9,7 +9,7 @@ import gsap from "gsap";
 import { translations } from "@/lib/dictionary";
 
 export default function Navbar() {
-  const { accessToken, isAdmin } = useAuth();
+  const { accessToken, isAdmin, loading } = useAuth();
   const { language } = useLanguage();
   const t = translations[language];
   const logo = useRef<HTMLDivElement>(null);

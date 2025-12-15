@@ -26,6 +26,17 @@ export default function UserDetailsPart({ profile }: Props) {
     }
   };
 
+  function formatHoursToHM(hours: number | null | undefined) {
+    if (hours == null || Number.isNaN(hours)) return "—";
+    const totalMinutes = Math.round(hours * 60);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+
+    if (h === 0) return `${m}m`;
+    if (m === 0) return `${h}h`;
+    return `${h}h ${m}m`;
+  }
+
   return (
     <div className="w-full">
       <div className="flex gap-6">
@@ -56,8 +67,8 @@ export default function UserDetailsPart({ profile }: Props) {
         {/* Right column: content */}
         <div className="flex-1 w-full">
           {active === "info" ? (
-            <div>
-              <div className="flex  items-center gap-4">
+            <div className="flex flex-col gap-6">
+              <div className="flex items-center gap-4">
                 <div className="w-[70px] h-[70px] border-2 border-gray-200 overflow-hidden bg-white flex items-center justify-center">
                   {profile?.pictureUrl ? (
                     <Image
@@ -76,6 +87,18 @@ export default function UserDetailsPart({ profile }: Props) {
                     <span>Hello {profile?.name ?? "—"}!</span>
                   </p>
                 </div>
+              </div>
+              <div className="flex gap-2 items-center">
+                <label className="text-sm block text-gray-600">
+                  Number of Todos:
+                </label>
+                <p>{profile?.number_of_Todos}</p>
+              </div>
+              <div className="flex gap-2 items-center">
+                <label className="text-sm block text-gray-600">
+                  Average Completion Time:
+                </label>
+                <p>{formatHoursToHM(profile?.average_completion_time)}</p>
               </div>
             </div>
           ) : (
