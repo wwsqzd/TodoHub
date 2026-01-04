@@ -21,6 +21,13 @@ namespace TodoHub.Main.Core.Mappings
             CreateMap<RegisterDTO, UserEntity>();
             CreateMap<UserGoogleDTO, UserEntity>();
             CreateMap<UserGitHubDTO, UserEntity>();
+            CreateMap<CreateTodoDTO, SearchTodoDTO>();
+            CreateMap<SearchTodoDTO, CreateTodoDTO>();
+            CreateMap<UpdateTodoDTO, CreateTodoDTO>();
+            CreateMap<TodoEntity, SearchTodoDTO>();
+            CreateMap<SearchTodoDTO, TodoEntity>();
+            CreateMap<SearchTodoDTO, TodoDTO>();
+            CreateMap<TodoDTO, SearchTodoDTO>();
         }
     }
 }

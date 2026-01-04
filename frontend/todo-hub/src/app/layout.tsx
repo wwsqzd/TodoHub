@@ -3,7 +3,7 @@ import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { AuthProvider } from "@/context/AuthContext";
-import { Delius } from "next/font/google";
+// import { Delius } from "next/font/google";
 import { LanguageProvider } from "@/context/LanguageContext";
 
 export const metadata: Metadata = {
@@ -11,10 +11,10 @@ export const metadata: Metadata = {
   description: "A simple todo app built with Next.js and Tailwind CSS",
 };
 
-const font = Delius({
-  subsets: ["latin"],
-  weight: ["400"],
-});
+// const font = Delius({
+//   subsets: ["latin"],
+//   weight: ["400"],
+// });
 
 export default function RootLayout({
   children,
@@ -23,7 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={font.className}>
+      <body>
         <LanguageProvider>
           <AuthProvider>
             <Navbar />

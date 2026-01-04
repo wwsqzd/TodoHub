@@ -14,6 +14,7 @@ using TodoHub.Main.Core.Validation;
 using TodoHub.Main.DataAccess.Context;
 using TodoHub.Main.DataAccess.Interfaces;
 using TodoHub.Main.DataAccess.Repository;
+using Elastic.Clients.Elasticsearch;
 
 
 // logger
@@ -84,6 +85,8 @@ try
     builder.Services.AddScoped<IJwtService, JwtService>();
     builder.Services.AddScoped<IPasswordService, PasswordService>();
     builder.Services.AddScoped<IUserRepository, UserRepository>();
+
+  
     
 
     builder.Services.AddScoped<ITodoService, TodoService>();
@@ -114,6 +117,18 @@ try
     {
         return QueueProducer.CreateAsync().GetAwaiter().GetResult();
     });
+
+
+    // Elastik Search
+    builder.Services.AddSingleton(sp =>
+    {
+        var uri = new Uri(builder.Configuration["ElastikSearch:Url"]!);
+        var settings = new ElasticsearchClientSettings(uri);
+
+        return new ElasticsearchClient(settings);
+    });
+    builder.Services.AddScoped<IElastikSearchService, ElastikSearchService>();
+    builder.Services.AddScoped<IElastikSearchRepository, ElastikSearchRepository>();
 
 
     // every 12 hours

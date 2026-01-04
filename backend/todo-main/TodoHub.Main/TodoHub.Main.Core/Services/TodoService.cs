@@ -1,6 +1,8 @@
 ﻿
+using AutoMapper;
 using FluentValidation;
 using FluentValidation.Results;
+using Serilog;
 using TodoHub.Main.Core.Common;
 using TodoHub.Main.Core.DTOs.Request;
 using TodoHub.Main.Core.DTOs.Response;
@@ -14,23 +16,40 @@ namespace TodoHub.Main.Core.Services
         private readonly AbstractValidator<CreateTodoDTO> _createvalidator;
         private readonly AbstractValidator<UpdateTodoDTO> _updatevalidator;
         private readonly ITodoCacheService _todoCacheService;
+        private readonly IElastikSearchService _elastikSearchService;
+        
 
-        public TodoService(ITodoRepository todoRepository, AbstractValidator<CreateTodoDTO> create_validator, AbstractValidator<UpdateTodoDTO> updatevalidator, ITodoCacheService todoCacheService)
+        public TodoService(
+            ITodoRepository todoRepository,
+            AbstractValidator<CreateTodoDTO> create_validator,
+            AbstractValidator<UpdateTodoDTO> updatevalidator,
+            ITodoCacheService todoCacheService,
+            IElastikSearchService elastikSearchService
+            
+            )
         {
             _todoRepository = todoRepository;
             _createvalidator = create_validator;
             _updatevalidator = updatevalidator;
             _todoCacheService = todoCacheService;
+            _elastikSearchService = elastikSearchService;
+            
         }
         // add todo 
         public async Task<Result<TodoDTO>> AddTodoAsync(CreateTodoDTO todo, Guid OwnerId)
         {
+            Log.Information("AddTodoAsync starting in TodoService");
             ValidationResult res = _createvalidator.Validate(todo);
             if (!res.IsValid)
             {
                 return Result<TodoDTO>.Fail("Incorrect data entry");
             }
             var createdTodo = await _todoRepository.AddTodoAsyncRepo(todo, OwnerId);
+            var elastik_response = await _elastikSearchService.UpsertDoc(createdTodo, createdTodo.Id);
+            if (!elastik_response.Success)
+            {
+                return Result<TodoDTO>.Fail(elastik_response.Error);
+            }
             await _todoCacheService.DeleteCache(OwnerId);
             return Result<TodoDTO>.Ok(createdTodo);
         }
@@ -43,6 +62,7 @@ namespace TodoHub.Main.Core.Services
             {
                 return Result<Guid>.Fail("Error deleting todo");
             }
+            await _elastikSearchService.DeleteDoc(id, OwnerId);
             await _todoCacheService.DeleteCache(OwnerId);
             return Result<Guid>.Ok(res.Value);
         }
@@ -84,6 +104,7 @@ namespace TodoHub.Main.Core.Services
                 return Result<TodoDTO>.Fail("Incorrect data entry");
             }
             var updatedTodo = await _todoRepository.UpdateTodoAsyncRepo(todo, OwnerId, TodoId);
+            await _elastikSearchService.UpsertDoc(updatedTodo, updatedTodo.Id);
             await _todoCacheService.DeleteCache(OwnerId);
             return Result<TodoDTO>.Ok(updatedTodo);
         }

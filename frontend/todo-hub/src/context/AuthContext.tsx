@@ -50,10 +50,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         console.error("Auth check failed:", err);
+      } finally {
+        setLoading(false);
       }
     };
     checkToken();
-    setLoading(false);
   }, []);
 
   return (

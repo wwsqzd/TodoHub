@@ -35,7 +35,7 @@ namespace TodoHub.Main.Core.Services
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(_config["Jwt:Expire"]!)),
+                expires: DateTime.UtcNow.AddHours(Convert.ToDouble(_config["Jwt:Expire"]!)),
                 signingCredentials: creds
             );
             return token;
