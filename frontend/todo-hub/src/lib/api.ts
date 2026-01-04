@@ -223,4 +223,17 @@ export const modifyTodo = async (id: string, data: {title: string, description: 
   return res.data;
 }
 
+// ---- Search Todos ----
+
+
+export const searchTodos = async (q: string) => {
+  const res = await api.get(`${API_URL}/search?q=${encodeURIComponent(q)}`, {
+    withCredentials: true,
+  });
+  if (res.status !== 200) throw new Error("Error searching todos");
+  return res.data;
+};
+
+
+
 export default api;

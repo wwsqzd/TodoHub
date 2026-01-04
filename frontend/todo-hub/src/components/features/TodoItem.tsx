@@ -62,7 +62,7 @@ export default function TodoItem({ todo, onDelete, onModify, onEdit }: Props) {
     <div
       ref={todoRef}
       key={todo.id}
-      className="max-w-xs w-full h-fit bg-white rounded-lg shadow-md p-6 flex flex-col justify-between gap-3 border border-gray-200 hover:shadow-lg transition-all"
+      className={`min-w-xs  h-fit bg-white rounded-lg shadow-md p-6 flex flex-col justify-between gap-3 border border-gray-200 hover:shadow-lg transition-all`}
     >
       <div className="flex flex-col items-start gap-2">
         {todo.isCompleted ? (

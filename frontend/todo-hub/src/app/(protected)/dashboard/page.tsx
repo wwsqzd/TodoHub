@@ -166,7 +166,7 @@ export default function Dashboard() {
           </div>
         </div>
       ) : todos && todos.length > 0 ? (
-        <div className="flex flex-col justify-between min-h-[calc(100vh-110px)]">
+        <>
           <TodosList
             ref={ConRef}
             todos={todos}
@@ -180,7 +180,7 @@ export default function Dashboard() {
               {isFetchingMore && <LoadingUI />}
             </div>
           )}
-        </div>
+        </>
       ) : (
         <WelcomePart handleButton={handleButton} />
       )}

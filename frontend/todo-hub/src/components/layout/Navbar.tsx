@@ -7,6 +7,7 @@ import { HiMenu } from "react-icons/hi";
 import { HiX } from "react-icons/hi";
 import gsap from "gsap";
 import { translations } from "@/lib/dictionary";
+import LoadingUI from "../ui/LoadingUI";
 
 export default function Navbar() {
   const { accessToken, isAdmin, loading } = useAuth();
@@ -115,7 +116,16 @@ export default function Navbar() {
 
       {/* Desktop Nav - Center */}
       <div className="hidden sm:flex gap-10 items-center flex-1 justify-center max-w-lg">
-        {!accessToken ? (
+        {loading ? (
+          <div className="w-full flex items-center justify-center gap-5">
+            <div className="w-32 h-10 rounded-lg bg-gray-200">
+              <LoadingUI />
+            </div>
+            <div className="w-32 h-10 rounded-lg bg-gray-200">
+              <LoadingUI />
+            </div>
+          </div>
+        ) : !accessToken ? (
           <>
             <Link href="/" className="text-black font-bold text-lg">
               <div
