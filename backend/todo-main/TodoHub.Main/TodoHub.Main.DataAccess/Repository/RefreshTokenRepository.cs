@@ -20,6 +20,7 @@ namespace TodoHub.Main.DataAccess.Repository
         // add refresh token
         public async Task AddRefreshTokenRepo(string refreshToken, Guid userId)
         {
+            Log.Information("AddRefreshTokenRepo starting in RTR");
             var entity = new RefreshTokenEntity
             {
                 UserId = userId,
@@ -32,6 +33,8 @@ namespace TodoHub.Main.DataAccess.Repository
         // delete old tokens
         public async Task DeleteOldTokensRepo()
         {
+            Log.Information("DeleteOldTokenRepo starting in RTR");
+
             var tomorrow = DateTime.UtcNow.AddDays(1);
             var oldTokens = await _context.RefreshTokens.Where(token => token.Expires < tomorrow || token.Revoked != null).ToListAsync();
             _context.RemoveRange(oldTokens);
@@ -42,6 +45,8 @@ namespace TodoHub.Main.DataAccess.Repository
         // get token
         public async Task<RefreshTokenEntity?> GetTokenRepo(string refreshToken)
         {
+            Log.Information("GetTokenRepo starting in RTR");
+
             var res = await _context.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == refreshToken);
             if (res == null) return null;
             return res;
@@ -50,6 +55,7 @@ namespace TodoHub.Main.DataAccess.Repository
         // get User id by refresh token
         public async Task<Guid?> GetUserIdRepo(string hash_token)
         {
+            Log.Information("GetUserIdRepo starting in RTR");
             var res = await _context.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == hash_token);
             return res?.UserId;
         }
@@ -57,6 +63,8 @@ namespace TodoHub.Main.DataAccess.Repository
         // refresh old token
         public async Task RefreshTokenRepo(string refreshToken, string newToken, Guid userId)
         {
+            Log.Information("RefreshTokenRepo starting in RTR");
+
             // revoke old token
             var token = await _context.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash.Equals(refreshToken));
             if (token == null)
@@ -83,6 +91,8 @@ namespace TodoHub.Main.DataAccess.Repository
         // revoke token
         public async Task RevokeRefreshTokenRepo(string refreshToken)
         {
+            Log.Information("RevokeRefreshTokenRepo starting in RTR");
+
             var res = await _context.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == refreshToken);
             if (res == null)
             {
@@ -95,6 +105,8 @@ namespace TodoHub.Main.DataAccess.Repository
         // delete refresh tokens by user
         public async Task<bool> DeleteRefreshTokensByUserRepo(Guid userId)
         {
+            Log.Information("DeleteRefreshTokensByUserRepo starting in RTR");
+
             var refreshTokens = await _context.RefreshTokens.Where(t => t.UserId == userId).ToListAsync();
             _context.RemoveRange(refreshTokens);
             await _context.SaveChangesAsync();
@@ -104,6 +116,8 @@ namespace TodoHub.Main.DataAccess.Repository
         // is Refresh Token valid?
         public async Task<bool> isRefreshTokenValidRepo(string refreshToken)
         {
+            Log.Information("isRefreshTokenValidRepo starting in RTR");
+
             var token = await _context.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == refreshToken);
 
             while (token?.ReplacedByToken != null)
@@ -111,9 +125,6 @@ namespace TodoHub.Main.DataAccess.Repository
                 token = await _context.RefreshTokens
                     .FirstOrDefaultAsync(t => t.TokenHash == token.ReplacedByToken);
             }
-
-            Log.Information($"[REFRESH CHECK] Token expires at: {token?.Expires:o}, Now: {DateTime.UtcNow:o}");
-            Log.Information($"[REFRESH CHECK HASH] Searching for: {refreshToken}, Found: {token?.TokenHash}");
 
             return token != null
                 && token.ReplacedByToken == null

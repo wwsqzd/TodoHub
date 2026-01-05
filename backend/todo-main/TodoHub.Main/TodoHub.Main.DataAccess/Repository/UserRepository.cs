@@ -1,7 +1,7 @@
 ﻿// User Repository
-
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using TodoHub.Main.Core.DTOs.Request;
 using TodoHub.Main.Core.DTOs.Response;
 using TodoHub.Main.Core.Entities;
@@ -24,6 +24,7 @@ namespace TodoHub.Main.DataAccess.Repository
         // Add User 
         public async Task AddUserAsyncRepo(RegisterDTO user)
         {
+            Log.Information("AddUserAsyncRepo starting in UserRepository");
             var entity = _mapper.Map<UserEntity>(user);
             entity.AuthProvider = "Local";
             await _context.Users.AddAsync(entity);
@@ -33,6 +34,7 @@ namespace TodoHub.Main.DataAccess.Repository
         // Add Google User
         public async Task AddGoogleUserAsyncRepo(UserGoogleDTO user)
         {
+            Log.Information("AddGoogleUserAsyncRepo starting in UserRepository");
             var entity = _mapper.Map<UserEntity>(user);
             entity.AuthProvider = "Google";
             entity.GoogleId = user.GoogleId;
@@ -44,6 +46,7 @@ namespace TodoHub.Main.DataAccess.Repository
         // Add GitHub User
         public async Task AddGitHubUserAsyncRepo(UserGitHubDTO user)
         {
+            Log.Information("AddGitHubUserAsyncRepo starting in UserRepository");
             var entity = _mapper.Map<UserEntity>(user);
             entity.AuthProvider = "GitHub";
             entity.GitHubId = user.GitHubId;
@@ -55,6 +58,7 @@ namespace TodoHub.Main.DataAccess.Repository
         // Get all users
         public async Task<List<UserDTO>> GetUsersAsyncRepo()
         {
+            Log.Information("GetUserAsyncRepo starting in UserRepository");
             var users = await _context.Users.ToListAsync();
             var userDtos = _mapper.Map<List<UserDTO>>(users);
             return userDtos;
@@ -63,6 +67,7 @@ namespace TodoHub.Main.DataAccess.Repository
         // Get user with id
         public async Task<UserEntity?> GetUserByIdAsyncRepo(Guid id)
         {
+            Log.Information("GetUserByIdAsyncRepo starting in UserRepository");
             var user = await _context.Users.FindAsync(id);
             if (user == null) return null;
             return user;
@@ -71,6 +76,7 @@ namespace TodoHub.Main.DataAccess.Repository
         // Get user with email
         public async Task<UserEntity?> GetUserByEmailAsyncRepo(string email)
         {
+            Log.Information("AddUserAsyncRepo starting in UserRepository");
             var user =  await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
             if (user == null) return null;
             return user;
@@ -79,6 +85,7 @@ namespace TodoHub.Main.DataAccess.Repository
         // delete user
         public async Task<bool> DeleteUserAsyncRepo(Guid id)
         {
+            Log.Information("DeleteUserAsyncRepo starting in UserRepository");
             var user = await _context.Users.FindAsync(id);
             if (user == null) return false;
 
@@ -90,6 +97,8 @@ namespace TodoHub.Main.DataAccess.Repository
         // get profile
         public async Task<UserDTO> GetMeRepo(Guid id)
         {
+            Log.Information("GetMeRepo starting in UserRepository");
+
             var user = await _context.Users.FindAsync(id);
             var userDto = _mapper.Map<UserDTO>(user);
             userDto.Number_of_Todos = await _context.Todos.CountAsync(todo => todo.OwnerId == id);
@@ -99,6 +108,8 @@ namespace TodoHub.Main.DataAccess.Repository
         // is user admin?
         public async Task<bool> IsUserAdminRepo(Guid id)
         {
+            Log.Information("IsUserAdminRepo starting in UserRepository");
+
             var user = await _context.Users.FirstOrDefaultAsync(user => user.Id == id);
             if (user == null) return false;
             return user.IsAdmin;
@@ -107,6 +118,8 @@ namespace TodoHub.Main.DataAccess.Repository
         // Change Language in User
         public async Task<bool> ChangeUserLanguageRepo(string language, Guid id)
         {
+            Log.Information("ChangeUserLanguageRepo starting in UserRepository");
+
             var user = await _context.Users.FirstOrDefaultAsync(user => user.Id == id);
             if (user == null) return false;
             user.Interface_Language = language;

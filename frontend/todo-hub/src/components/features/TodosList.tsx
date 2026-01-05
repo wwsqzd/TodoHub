@@ -26,7 +26,7 @@ const TodosList = forwardRef<HTMLDivElement, Props>(function TodosList(
   const { language } = useLanguage();
   const t = translations[language];
 
-  const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("oldest");
 
   const sortedTodos = useMemo(() => {
     const sorted = [...todos].sort((a, b) => {
@@ -69,7 +69,7 @@ const TodosList = forwardRef<HTMLDivElement, Props>(function TodosList(
       } finally {
         setSearching(false);
       }
-    }, 300);
+    }, 200);
   };
 
   const displayedTodos = useMemo(() => {
@@ -91,7 +91,7 @@ const TodosList = forwardRef<HTMLDivElement, Props>(function TodosList(
           type="text"
           value={searchQuery}
           onChange={(e) => SeearchTodo(e.target.value)}
-          placeholder={"Search todos "}
+          placeholder={t.searchTodos}
           className="w-96 max-w-md px-4 py-2 border border-gray-300 rounded-lg mb-4 "
         />
       </div>
@@ -119,7 +119,6 @@ const TodosList = forwardRef<HTMLDivElement, Props>(function TodosList(
       </div>
       <div ref={ref} className="flex items-center  flex-col gap-4 p-4 w-full">
         {displayedTodos.map((todo) => (
-          // <div key={todo.id} data-id={todo.id} className="min-w-[150px] relative">
           <TodoItem
             key={todo.id}
             todo={todo}
@@ -127,8 +126,11 @@ const TodosList = forwardRef<HTMLDivElement, Props>(function TodosList(
             onModify={onModify}
             onEdit={onEdit}
           />
-          // </div>
         ))}
+        {searching && <p>Searching...</p>}
+        {displayedTodos.length === 0 && !searching && (
+          <p className="text-gray-500 mt-10">{t.noTodos}</p>
+        )}
       </div>
     </div>
   );

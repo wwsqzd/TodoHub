@@ -15,6 +15,7 @@ using TodoHub.Main.DataAccess.Context;
 using TodoHub.Main.DataAccess.Interfaces;
 using TodoHub.Main.DataAccess.Repository;
 using Elastic.Clients.Elasticsearch;
+using Prometheus;
 
 
 // logger
@@ -288,7 +289,9 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
 
-
+    // Prometheus + Grafana
+    app.UseHttpMetrics();
+    app.MapMetrics("/metrics");
     
 
     app.MapControllers();
