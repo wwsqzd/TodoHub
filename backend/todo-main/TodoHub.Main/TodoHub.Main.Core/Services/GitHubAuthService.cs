@@ -108,7 +108,7 @@ namespace TodoHub.Main.Core.Services
             
             var userInfo = new UserGitHubDTO
             {
-                GitHubId = githubUserJson.GetProperty("id").ToString(), // ID это число, но храним как строку
+                GitHubId = githubUserJson.GetProperty("id").ToString(),
                 Name = githubUserJson.TryGetProperty("name", out var nameProp) ? nameProp.GetString() : githubUserJson.GetProperty("login").GetString(),
                 PictureUrl = githubUserJson.GetProperty("avatar_url").GetString(),
                 Email = githubUserJson.TryGetProperty("email", out var emailProp) ? emailProp.GetString() : null
@@ -156,7 +156,7 @@ namespace TodoHub.Main.Core.Services
             }
 
             
-            if (userFromDb.GitHubId == null)
+            if (userFromDb?.GitHubId == null)
             {
                 return ("", Result<LoginResponseDTO>.Fail("User exists but GitHub is not linked."));
             }

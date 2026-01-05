@@ -31,6 +31,8 @@ export const translations: Record<
     sortNewest: string;
     sortOldest: string;
     settings: string;
+    noTodos: string;
+    searchTodos: string;
   }
 > = {
   en: {
@@ -62,6 +64,8 @@ export const translations: Record<
     sortNewest: "Sort by Newest",
     sortOldest: "Sort by Oldest",
     settings: "Settings",
+    noTodos: "No todos found.",
+    searchTodos: "Search todos",
   },
   de: {
     newTodo: "Neues Todo",
@@ -92,5 +96,7 @@ export const translations: Record<
     sortNewest: "Nach Neueste sortieren",
     sortOldest: "Nach Älteste sortieren",
     settings: "Einstellungen",
+    noTodos: "Keine Todos gefunden.",
+    searchTodos: "Todos suchen",
   },
 };
