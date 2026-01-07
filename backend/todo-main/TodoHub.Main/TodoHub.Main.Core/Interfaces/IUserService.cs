@@ -8,16 +8,16 @@ namespace TodoHub.Main.Core.Interfaces
 {
     public interface IUserService
     {
-        Task<List<UserDTO>> GetUsersAsync();
-        Task<UserEntity?> GetUserByIdAsync(Guid id);
-        Task<UserEntity?> GetUserByEmailAsync(string email);
-        Task<Result<RegisterDTO>> AddUserAsync(RegisterDTO user);
-        Task<Result<Guid>> DeleteUserAsync(Guid id);
-        Task<(string token, Result<LoginResponseDTO>)> LoginUserAsync(LoginDTO user);
-        Task<Result<bool>> LogoutUserAsync(string refresh_token);
-        Task<(string token, Result<LoginResponseDTO>)> RefreshLoginAsync(string old_refresh_token);
-        Task<Result<UserDTO>> GetMe(Guid id);
-        Task<Result<bool>> IsUserAdmin(Guid id);
-        Task<Result<bool>> ChangeUserLanguage(ChangeLanguageDTO language_dto, Guid user_id);
+        Task<List<UserDTO>> GetUsersAsync(CancellationToken ct);
+        Task<UserEntity?> GetUserByIdAsync(Guid id, CancellationToken ct);
+        Task<UserEntity?> GetUserByEmailAsync(string email, CancellationToken ct);
+        Task<Result<RegisterDTO>> AddUserAsync(RegisterDTO user, CancellationToken ct);
+        Task<Result<Guid>> DeleteUserAsync(Guid id, CancellationToken ct);
+        Task<(string token, Result<LoginResponseDTO>)> LoginUserAsync(LoginDTO user, CancellationToken ct);
+        Task<Result<bool>> LogoutUserAsync(string refresh_token, CancellationToken ct);
+        Task<(string token, Result<LoginResponseDTO>)> RefreshLoginAsync(string old_refresh_token, CancellationToken ct);
+        Task<Result<UserDTO>> GetMe(Guid id, CancellationToken ct);
+        Task<Result<bool>> IsUserAdmin(Guid id, CancellationToken ct);
+        Task<Result<bool>> ChangeUserLanguage(ChangeLanguageDTO language_dto, Guid user_id, CancellationToken ct);
     }
 }

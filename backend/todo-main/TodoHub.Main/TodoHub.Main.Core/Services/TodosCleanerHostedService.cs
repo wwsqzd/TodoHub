@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
+using TodoHub.Main.Core.Common;
 using TodoHub.Main.Core.Interfaces;
 
 namespace TodoHub.Main.Core.Services
@@ -32,7 +33,7 @@ namespace TodoHub.Main.Core.Services
                 using var scope = _scopeFactory.CreateScope(); // Create a new service scope to get scoped services
                 var todosService = scope.ServiceProvider.GetRequiredService<ITodosCleanerService>();
                 // Service
-                await todosService.CleanALlTodosByUser(userId);
+                await ResilienceExecutor.WithTimeout(t => todosService.CleanALlTodosByUser(userId, t), TimeSpan.FromSeconds(5), stoppingToken);
             };
 
             await channel.BasicConsumeAsync("todo_queue", true, consumer);

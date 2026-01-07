@@ -2,6 +2,6 @@
 {
     public interface ITodosCleanerService
     {
-        Task CleanALlTodosByUser(Guid ownerId);
+        Task CleanALlTodosByUser(Guid ownerId, CancellationToken ct);
     }
 }

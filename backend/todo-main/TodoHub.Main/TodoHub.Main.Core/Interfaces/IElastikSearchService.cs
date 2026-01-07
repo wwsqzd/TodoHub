@@ -1,6 +1,4 @@
-﻿
-using TodoHub.Main.Core.Common;
-using TodoHub.Main.Core.DTOs.Request;
+﻿using TodoHub.Main.Core.Common;
 using TodoHub.Main.Core.DTOs.Response;
 
 namespace TodoHub.Main.Core.Interfaces
@@ -9,9 +7,9 @@ namespace TodoHub.Main.Core.Interfaces
     {
         Task<Result<bool>> CreateIndex();
         Task<Result<bool>> ReIndex();
-        Task<Result<bool>> UpsertDoc(TodoDTO todo, Guid todoId);
-        Task<Result<List<TodoDTO>>> SearchDocuments(Guid userId, string query);
-        Task<Result<bool>> DeleteDoc(Guid TodoId, Guid OwnerId);
+        Task<Result<bool>> UpsertDoc(TodoDTO todo, Guid todoId, CancellationToken ct);
+        Task<Result<List<TodoDTO>>> SearchDocuments(Guid userId, string query, CancellationToken ct);
+        Task<Result<bool>> DeleteDoc(Guid TodoId, Guid OwnerId, CancellationToken ct);
         
     }
 }

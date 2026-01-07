@@ -2,6 +2,7 @@
 using Serilog;
 using System.Security.Cryptography;
 using System.Text;
+using TodoHub.Main.Core.Common;
 using TodoHub.Main.Core.Interfaces;
 using TodoHub.Main.DataAccess.Interfaces;
 
@@ -31,20 +32,20 @@ namespace TodoHub.Main.Core.Services
         }
 
 
-        public async Task<string> AddRefreshToken(Guid UserId)
+        public async Task<string> AddRefreshToken(Guid UserId, CancellationToken ct)
         {
             // Ich gebe dem Benutzer den normalen Token zurück und speichere den Hash in der Datenbank.
             var token = GenerateRefreshToken();
             var hash_token = HashToken(token);
-            await _refreshTokenRepository.AddRefreshTokenRepo(hash_token, UserId);
+            await ResilienceExecutor.WithTimeout(t => _refreshTokenRepository.AddRefreshTokenRepo(hash_token, UserId, t), TimeSpan.FromSeconds(2), ct);
             return token;
         }
 
-        public async Task<string?> RefreshToken(string old_refresh_token, Guid userId)
+        public async Task<string?> RefreshToken(string old_refresh_token, Guid userId, CancellationToken ct)
         {
             var oldHash = HashToken(old_refresh_token);
 
-            var oldToken = await _refreshTokenRepository.GetTokenRepo(oldHash);
+            var oldToken = await ResilienceExecutor.WithTimeout(t => _refreshTokenRepository.GetTokenRepo(oldHash, t), TimeSpan.FromSeconds(2), ct);
             if (oldToken == null)
             {
                 Log.Error("Old token is Invalid (in RefreshToken // PasswordService)");
@@ -54,7 +55,7 @@ namespace TodoHub.Main.Core.Services
             var newToken = GenerateRefreshToken();
             var newHash = HashToken(newToken);
 
-            await _refreshTokenRepository.RefreshTokenRepo(oldHash, newHash, userId);
+            await ResilienceExecutor.WithTimeout(t => _refreshTokenRepository.RefreshTokenRepo(oldHash, newHash, userId, t), TimeSpan.FromSeconds(2), ct);
 
             return newToken;
         }
@@ -77,26 +78,26 @@ namespace TodoHub.Main.Core.Services
             return Convert.ToBase64String(hash);
         }
 
-        public async Task<Guid?> GetUserId(string token)
+        public async Task<Guid?> GetUserId(string token, CancellationToken ct)
         {
             string hash_token = HashToken(token);
-           return await _refreshTokenRepository.GetUserIdRepo(hash_token);
+           return await ResilienceExecutor.WithTimeout(t => _refreshTokenRepository.GetUserIdRepo(hash_token, t), TimeSpan.FromSeconds(2), ct);
         }
 
-        public async Task RevokeRefreshToken(string token)
+        public async Task RevokeRefreshToken(string token, CancellationToken ct)
         {
             var hash_token = HashToken(token);
-            var temp = await _refreshTokenRepository.GetTokenRepo(hash_token);
+            var temp = await ResilienceExecutor.WithTimeout(t => _refreshTokenRepository.GetTokenRepo(hash_token, t), TimeSpan.FromSeconds(2), ct);
             if (temp != null && temp.IsActive)
             {
-                await _refreshTokenRepository.RevokeRefreshTokenRepo(hash_token);
+                await ResilienceExecutor.WithTimeout(t => _refreshTokenRepository.RevokeRefreshTokenRepo(hash_token, t), TimeSpan.FromSeconds(2), ct);
             }
         }
 
-        public async Task<bool> isRefreshTokenValid(string token)
+        public async Task<bool> isRefreshTokenValid(string token, CancellationToken ct)
         {
             var hash_token = HashToken(token);
-            return await _refreshTokenRepository.isRefreshTokenValidRepo(hash_token);
+            return await ResilienceExecutor.WithTimeout(t => _refreshTokenRepository.isRefreshTokenValidRepo(hash_token, t), TimeSpan.FromSeconds(2), ct);
         }
     }
 }

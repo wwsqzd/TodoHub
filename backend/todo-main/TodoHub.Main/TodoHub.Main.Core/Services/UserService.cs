@@ -40,14 +40,14 @@ namespace TodoHub.Main.Core.Services
         }
 
         // register user
-        public async Task<Result<RegisterDTO>> AddUserAsync(RegisterDTO user)
+        public async Task<Result<RegisterDTO>> AddUserAsync(RegisterDTO user, CancellationToken ct)
         {
             ValidationResult resValidator = _register_validator.Validate(user);
             if (!resValidator.IsValid)
             {
                 return Result<RegisterDTO>.Fail("Incorrect data entry");
             }
-            if (await _userRepository.GetUserByEmailAsyncRepo(user.Email) != null)
+            if (await ResilienceExecutor.WithTimeout(t =>  _userRepository.GetUserByEmailAsyncRepo(user.Email, t), TimeSpan.FromSeconds(5), ct) != null)
             {
                 return Result<RegisterDTO>.Fail("This user already exists");
             }
@@ -59,12 +59,12 @@ namespace TodoHub.Main.Core.Services
 
             user.Password = _passwordService.HashPassword(user.Password);
             
-            await _userRepository.AddUserAsyncRepo(user);
+            await ResilienceExecutor.WithTimeout(t =>  _userRepository.AddUserAsyncRepo(user, t), TimeSpan.FromSeconds(5), ct);
             return Result<RegisterDTO>.Ok(user);
         }
 
         // login
-        public async Task<(string token, Result<LoginResponseDTO>)> LoginUserAsync(LoginDTO login_user)
+        public async Task<(string token, Result<LoginResponseDTO>)> LoginUserAsync(LoginDTO login_user, CancellationToken ct)
         {
             // login validator
             ValidationResult resValidator = _login_validator.Validate(login_user);
@@ -74,7 +74,7 @@ namespace TodoHub.Main.Core.Services
             }
 
             // search user with email
-            var user = await _userRepository.GetUserByEmailAsyncRepo(login_user.Email);
+            var user = await ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByEmailAsyncRepo(login_user.Email, t), TimeSpan.FromSeconds(5), ct);
 
             // if the password is zero or not equal, we throw an error
             if (user == null)
@@ -89,7 +89,7 @@ namespace TodoHub.Main.Core.Services
             var token = _jwtService.getJwtToken(user);
             
 
-            var refreshtoken = await _passwordService.AddRefreshToken(user.Id);
+            var refreshtoken = await _passwordService.AddRefreshToken(user.Id, ct);
 
             if (refreshtoken == null)
             {
@@ -108,11 +108,11 @@ namespace TodoHub.Main.Core.Services
         }
 
         // refresh token 
-        public async Task<(string token, Result<LoginResponseDTO>)> RefreshLoginAsync(string old_refresh_token)
+        public async Task<(string token, Result<LoginResponseDTO>)> RefreshLoginAsync(string old_refresh_token, CancellationToken ct)
         {
             
             // validation
-            var isValid = await _passwordService.isRefreshTokenValid(old_refresh_token);
+            var isValid = await _passwordService.isRefreshTokenValid(old_refresh_token, ct);
             if (!isValid)
             {
                 return (string.Empty, Result<LoginResponseDTO>.Fail("Refresh token is Invalid"));
@@ -120,13 +120,13 @@ namespace TodoHub.Main.Core.Services
 
 
             // user id in token
-            var userIdInToken = await _passwordService.GetUserId(old_refresh_token);
+            var userIdInToken = await _passwordService.GetUserId(old_refresh_token, ct);
             if (userIdInToken == null)
             {
                 return (string.Empty, Result<LoginResponseDTO>.Fail("UserID not found in token"));
             }
             // find user
-            var user = await _userRepository.GetUserByIdAsyncRepo(userIdInToken.Value);
+            var user = await ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByIdAsyncRepo(userIdInToken.Value, t), TimeSpan.FromSeconds(2), ct);
             if (user == null)
             {
                 return (string.Empty, Result<LoginResponseDTO>.Fail("The user with this ID was not found."));
@@ -136,7 +136,7 @@ namespace TodoHub.Main.Core.Services
             var token = new JwtSecurityTokenHandler().WriteToken(jwt);
 
             // Refresh Token
-            var newRefreshtoken = await _passwordService.RefreshToken(old_refresh_token, userIdInToken.Value);
+            var newRefreshtoken = await _passwordService.RefreshToken(old_refresh_token, userIdInToken.Value, ct);
             if (newRefreshtoken == null)
             {
                 return (string.Empty, Result<LoginResponseDTO>.Fail("Refresh Token is Invalid"));
@@ -154,40 +154,40 @@ namespace TodoHub.Main.Core.Services
         
 
         // get all users
-        public async Task<List<UserDTO>> GetUsersAsync()
+        public async Task<List<UserDTO>> GetUsersAsync(CancellationToken ct)
         {
-            return await _userRepository.GetUsersAsyncRepo();
+            return await ResilienceExecutor.WithTimeout(t => _userRepository.GetUsersAsyncRepo(t), TimeSpan.FromSeconds(5), ct); 
         }
 
         // seach with id
-        public async Task<UserEntity?> GetUserByIdAsync(Guid id)
+        public async Task<UserEntity?> GetUserByIdAsync(Guid id, CancellationToken ct)
         {
-            return await _userRepository.GetUserByIdAsyncRepo(id);
+            return await ResilienceExecutor.WithTimeout(t =>  _userRepository.GetUserByIdAsyncRepo(id, t), TimeSpan.FromSeconds(5), ct);
         }
 
         // search with email
-        public async Task<UserEntity?> GetUserByEmailAsync(string email)
+        public async Task<UserEntity?> GetUserByEmailAsync(string email, CancellationToken ct)
         {
-            return await _userRepository.GetUserByEmailAsyncRepo(email);
+            return await ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByEmailAsyncRepo(email, t), TimeSpan.FromSeconds(2), ct);
         }
 
         // delete user
-        public async Task<Result<Guid>> DeleteUserAsync(Guid id)
+        public async Task<Result<Guid>> DeleteUserAsync(Guid id, CancellationToken ct)
         {
-            var user = await _userRepository.GetUserByIdAsyncRepo(id);
+            var user = await ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByIdAsyncRepo(id, t), TimeSpan.FromSeconds(5), ct);
             if (user == null)
             {
                 return Result<Guid>.Fail("User does not exist");
             }
-            await _userRepository.DeleteUserAsyncRepo(id);
-            await _refreshTokenRepository.DeleteRefreshTokensByUserRepo(id);
+            await ResilienceExecutor.WithTimeout(t => _userRepository.DeleteUserAsyncRepo(id, t), TimeSpan.FromSeconds(5), ct);
+            await ResilienceExecutor.WithTimeout(t =>  _refreshTokenRepository.DeleteRefreshTokensByUserRepo(id, t), TimeSpan.FromSeconds(5), ct);
             return Result<Guid>.Ok(id);
         }
 
         // get profile
-        public async Task<Result<UserDTO>> GetMe(Guid userId)
+        public async Task<Result<UserDTO>> GetMe(Guid userId, CancellationToken ct)
         {
-            var user = await _userRepository.GetMeRepo(userId);
+            var user = await ResilienceExecutor.WithTimeout(t => _userRepository.GetMeRepo(userId, t), TimeSpan.FromSeconds(5), ct);
             if (user == null)
             {
                 return Result<UserDTO>.Fail("User does not exist");
@@ -197,11 +197,11 @@ namespace TodoHub.Main.Core.Services
         }
 
         // logout
-        public async Task<Result<bool>> LogoutUserAsync(string refresh_token)
+        public async Task<Result<bool>> LogoutUserAsync(string refresh_token, CancellationToken ct)
         {
             try
             { 
-                await _passwordService.RevokeRefreshToken(refresh_token);
+                await ResilienceExecutor.WithTimeout(t => _passwordService.RevokeRefreshToken(refresh_token, t), TimeSpan.FromSeconds(3), ct);
                 return Result<bool>.Ok(true);
             }
             catch (Exception ex) 
@@ -211,11 +211,11 @@ namespace TodoHub.Main.Core.Services
         }
 
         // validate user (admin or not)
-        public async Task<Result<bool>> IsUserAdmin(Guid id)
+        public async Task<Result<bool>> IsUserAdmin(Guid id, CancellationToken ct)
         {
             try
             {
-                bool res = await _userRepository.IsUserAdminRepo(id);
+                bool res = await ResilienceExecutor.WithTimeout(t => _userRepository.IsUserAdminRepo(id, t), TimeSpan.FromSeconds(5), ct);
                 return Result<bool>.Ok(res);
             }
             catch (Exception ex)
@@ -224,7 +224,7 @@ namespace TodoHub.Main.Core.Services
             }
         }
 
-        public async Task<Result<bool>> ChangeUserLanguage(ChangeLanguageDTO language_dto, Guid user_id)
+        public async Task<Result<bool>> ChangeUserLanguage(ChangeLanguageDTO language_dto, Guid user_id, CancellationToken ct)
         {
             ValidationResult validationResult = _language_validator.Validate(language_dto);
 
@@ -233,7 +233,7 @@ namespace TodoHub.Main.Core.Services
                 return Result<bool>.Fail("Incorrect Data Entry");
             }
 
-            var res = await _userRepository.ChangeUserLanguageRepo(language_dto.Language, user_id);
+            var res = await ResilienceExecutor.WithTimeout(t => _userRepository.ChangeUserLanguageRepo(language_dto.Language, user_id, t), TimeSpan.FromSeconds(5), ct);
             return Result<bool>.Ok(res);
         }
     }

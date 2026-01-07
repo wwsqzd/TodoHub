@@ -6,6 +6,6 @@ namespace TodoHub.Main.Core.Interfaces
     public interface IGoogleAuthService
     {
         string GetGoogleLoginUrl();
-        Task<(string token, Result<LoginResponseDTO>)> HandleGoogleCallbackAsync(string code);
+        Task<(string token, Result<LoginResponseDTO>)> HandleGoogleCallbackAsync(string code, CancellationToken ct);
     }
 }

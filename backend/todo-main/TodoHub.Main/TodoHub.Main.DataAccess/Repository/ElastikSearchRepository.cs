@@ -22,14 +22,14 @@ namespace TodoHub.Main.DataAccess.Repository
             _context = context;
         }
         // Create, Update Document in Elastik Search
-        public async Task<bool> UpsertDocRepo(TodoDTO todo, Guid todoId)
+        public async Task<bool> UpsertDocRepo(TodoDTO todo, Guid todoId, CancellationToken ct)
         {
             try
             {
                 Log.Information("UpsertDocRepo starting in ESR");
 
                 var entity = _mapper.Map<SearchTodoDTO>(todo);
-                var res = await _client.IndexAsync(entity, x => x.Index("todos").Id(todoId));
+                var res = await _client.IndexAsync(entity, x => x.Index("todos").Id(todoId), ct);
 
                 Log.Information("ES response valid: {IsValid}", res.IsValidResponse);
                 Log.Information("ES debug: {Debug}", res.DebugInformation);
@@ -68,17 +68,17 @@ namespace TodoHub.Main.DataAccess.Repository
         }
 
         // Delete Document in Eleastik Search
-        public async Task<bool> DeleteDocRepo(Guid TodoId, Guid OwnerId)
+        public async Task<bool> DeleteDocRepo(Guid TodoId, Guid OwnerId, CancellationToken ct)
         {
             try
             {
                 Log.Information("DeleteDocRepo starting in ESR");
-                var get = await _client.GetAsync<SearchTodoDTO>(TodoId, g => g.Index("todos"));
+                var get = await _client.GetAsync<SearchTodoDTO>(TodoId, g => g.Index("todos"),ct);
 
                 if (!get.Found) return false;
                 if (get.Source!.OwnerId != OwnerId) return false;
 
-                var response = await _client.DeleteAsync<SearchTodoDTO>(TodoId, x => x.Index("todos"));
+                var response = await _client.DeleteAsync<SearchTodoDTO>(TodoId, x => x.Index("todos"),ct);
                 Log.Information("ES response valid: {IsValid}", response.IsValidResponse);
                 Log.Information($"Response in DeleteDocRepo(): {response.DebugInformation}");
                 return response.IsValidResponse;
@@ -124,7 +124,7 @@ namespace TodoHub.Main.DataAccess.Repository
         }
 
         // Main Search 
-        public async Task<List<TodoDTO>> SearchDocumentsRepo(Guid userId, string query)
+        public async Task<List<TodoDTO>> SearchDocumentsRepo(Guid userId, string query, CancellationToken ct)
         {
             try
             {
@@ -154,7 +154,7 @@ namespace TodoHub.Main.DataAccess.Repository
                             )
                             .MinimumShouldMatch(1)
                         )
-                    )
+                    ), ct
                 );
 
 

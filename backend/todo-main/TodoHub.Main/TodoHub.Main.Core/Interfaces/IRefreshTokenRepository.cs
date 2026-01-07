@@ -5,13 +5,13 @@ namespace TodoHub.Main.DataAccess.Interfaces
 {
     public interface IRefreshTokenRepository
     {
-        Task AddRefreshTokenRepo(string refreshToken, Guid userId);
-        Task RefreshTokenRepo(string refreshToken, string newToken, Guid userId);
-        Task RevokeRefreshTokenRepo(string refreshToken);
-        Task DeleteOldTokensRepo();
-        Task<RefreshTokenEntity?> GetTokenRepo(string refreshToken);
-        Task<Guid?> GetUserIdRepo(string hash_token);
-        Task<bool> DeleteRefreshTokensByUserRepo(Guid userId);
-        Task<bool> isRefreshTokenValidRepo(string refreshToken);
+        Task AddRefreshTokenRepo(string refreshToken, Guid userId, CancellationToken ct);
+        Task RefreshTokenRepo(string refreshToken, string newToken, Guid userId, CancellationToken ct);
+        Task RevokeRefreshTokenRepo(string refreshToken, CancellationToken ct);
+        Task DeleteOldTokensRepo(CancellationToken ct);
+        Task<RefreshTokenEntity?> GetTokenRepo(string refreshToken, CancellationToken ct);
+        Task<Guid?> GetUserIdRepo(string hash_token, CancellationToken ct);
+        Task<bool> DeleteRefreshTokensByUserRepo(Guid userId, CancellationToken ct);
+        Task<bool> isRefreshTokenValidRepo(string refreshToken, CancellationToken ct);
     }
 }

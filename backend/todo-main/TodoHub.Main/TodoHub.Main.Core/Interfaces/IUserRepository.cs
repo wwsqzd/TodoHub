@@ -7,16 +7,16 @@ namespace TodoHub.Main.Core.Interfaces
 {
     public interface IUserRepository
     {
-        Task AddUserAsyncRepo(RegisterDTO user);
-        Task<bool> DeleteUserAsyncRepo(Guid id);
-        Task<UserEntity?> GetUserByEmailAsyncRepo(string email);
-        Task<UserEntity?> GetUserByIdAsyncRepo(Guid id);
-        Task<List<UserDTO>> GetUsersAsyncRepo();
-        Task<UserDTO> GetMeRepo(Guid id);
-        Task<bool> IsUserAdminRepo(Guid id);
-        Task AddGoogleUserAsyncRepo(UserGoogleDTO user);
-        Task AddGitHubUserAsyncRepo(UserGitHubDTO user);
-        Task<bool> ChangeUserLanguageRepo(string language, Guid id);
+        Task AddUserAsyncRepo(RegisterDTO user, CancellationToken ct);
+        Task<bool> DeleteUserAsyncRepo(Guid id, CancellationToken ct);
+        Task<UserEntity?> GetUserByEmailAsyncRepo(string email, CancellationToken ct);
+        Task<UserEntity?> GetUserByIdAsyncRepo(Guid id, CancellationToken ct);
+        Task<List<UserDTO>> GetUsersAsyncRepo(CancellationToken ct);
+        Task<UserDTO> GetMeRepo(Guid id, CancellationToken ct);
+        Task<bool> IsUserAdminRepo(Guid id, CancellationToken ct);
+        Task AddGoogleUserAsyncRepo(UserGoogleDTO user, CancellationToken ct);
+        Task AddGitHubUserAsyncRepo(UserGitHubDTO user, CancellationToken ct);
+        Task<bool> ChangeUserLanguageRepo(string language, Guid id, CancellationToken ct);
 
     }
 }

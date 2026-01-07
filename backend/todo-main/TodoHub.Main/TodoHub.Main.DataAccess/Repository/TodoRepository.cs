@@ -24,53 +24,53 @@ namespace TodoHub.Main.DataAccess.Repository
         }
 
         // Adding a todo 
-        public async Task<TodoDTO> AddTodoAsyncRepo(CreateTodoDTO todo, Guid OwnerId)
+        public async Task<TodoDTO> AddTodoAsyncRepo(CreateTodoDTO todo, Guid OwnerId, CancellationToken ct)
         {
             Log.Information("AddTodoAsyncRepo starting in TodoRepository");
             var entity = _mapper.Map<TodoEntity>(todo);
             entity.OwnerId = OwnerId;
-            await _context.Todos.AddAsync(entity);
-            await _context.SaveChangesAsync();
+            await _context.Todos.AddAsync(entity, ct);
+            await _context.SaveChangesAsync(ct);
             var output = _mapper.Map<TodoDTO>(entity);
             return output;
         }
 
         // Deleting todo
-        public async Task<Guid?> DeleteTodoAsyncRepo(Guid id, Guid OwnerId)
+        public async Task<Guid?> DeleteTodoAsyncRepo(Guid id, Guid OwnerId, CancellationToken ct)
         {
             Log.Information("DeleteTodoAsyncRepo starting in TodoRepository");
 
-            var todo = await _context.Todos.FirstOrDefaultAsync(t => t.Id == id && t.OwnerId == OwnerId);
+            var todo = await _context.Todos.FirstOrDefaultAsync(t => t.Id == id && t.OwnerId == OwnerId, ct);
             if (todo == null) { return null; }
 
             _context.Todos.Remove(todo);
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(ct);
             return todo.Id;
         }
 
         //Deleting all todo in deleted user
-        public async Task<bool> DeleteAllTodoByUserAsyncRepo(Guid OwnerId)
+        public async Task<bool> DeleteAllTodoByUserAsyncRepo(Guid OwnerId, CancellationToken ct)
         {
             Log.Information("DeleteAllTodoByUserAsyncRepo starting in TodoRepository");
 
-            var todos = await _context.Todos.Where(t => t.OwnerId == OwnerId).ToListAsync();
+            var todos = await _context.Todos.Where(t => t.OwnerId == OwnerId).ToListAsync(ct);
             _context.Todos.RemoveRange(todos);
-            await _context.SaveChangesAsync();            
+            await _context.SaveChangesAsync(ct);            
             return true;
         }
 
         // Get one todo by ID
-        public async Task<TodoDTO?> GetTodoByIdAsyncRepo(Guid id, Guid OwnerId)
+        public async Task<TodoDTO?> GetTodoByIdAsyncRepo(Guid id, Guid OwnerId, CancellationToken ct)
         {
             Log.Information("GetTodoByIdAsyncRepo starting in TodoRepository");
 
-            var todos = await _context.Todos.FirstOrDefaultAsync(t => t.Id == id && t.OwnerId == OwnerId);
+            var todos = await _context.Todos.FirstOrDefaultAsync(t => t.Id == id && t.OwnerId == OwnerId,ct);
             var todosDTOs = _mapper.Map<TodoDTO>(todos);
             return todosDTOs;
         }
 
         // Get todo by userID and page
-        public async Task<List<TodoDTO>> GetTodosByPageAsyncRepo(Guid UserId, DateTime? lastCreated, Guid? lastId)
+        public async Task<List<TodoDTO>> GetTodosByPageAsyncRepo(Guid UserId, DateTime? lastCreated, Guid? lastId, CancellationToken ct)
         {
             Log.Information("GetTodosByPageAsyncRepo starting in TodoRepository");
 
@@ -89,14 +89,14 @@ namespace TodoHub.Main.DataAccess.Repository
                          .ThenByDescending(t => t.Id);
 
             
-            var todos = await query.Take(10).ToListAsync();
+            var todos = await query.Take(10).ToListAsync(ct);
 
             var todoDTOs = _mapper.Map<List<TodoDTO>>(todos);
             return todoDTOs;
         }
 
         // Get Todos
-        public async Task<List<TodoDTO>> GetTodosAsyncRepo(Guid UserId)
+        public async Task<List<TodoDTO>> GetTodosAsyncRepo(Guid UserId, CancellationToken ct)
         {
             Log.Information("GetTodosAsyncRepo starting in TodoRepository");
 
@@ -105,17 +105,17 @@ namespace TodoHub.Main.DataAccess.Repository
                 .OrderBy(t => t.IsCompleted)
                 .ThenByDescending(t => t.CreatedDate)
                 .ThenByDescending(t => t.Id)
-                .ToListAsync();
+                .ToListAsync(ct);
             var todoDTOs = _mapper.Map<List<TodoDTO>>(todos);
             return todoDTOs;
         }
 
         // Update todo
-        public async Task<TodoDTO> UpdateTodoAsyncRepo(UpdateTodoDTO todo_to_update, Guid OwnerId, Guid TodoId)
+        public async Task<TodoDTO> UpdateTodoAsyncRepo(UpdateTodoDTO todo_to_update, Guid OwnerId, Guid TodoId, CancellationToken ct)
         {
             Log.Information("UpdateTodoAsyncRepo starting in TodoRepository");
 
-            var todo = await _context.Todos.FirstOrDefaultAsync(t => t.Id == TodoId && t.OwnerId == OwnerId) ?? throw new Exception("Todo not found or you don't have access.");
+            var todo = await _context.Todos.FirstOrDefaultAsync(t => t.Id == TodoId && t.OwnerId == OwnerId, ct) ?? throw new Exception("Todo not found or you don't have access.");
 
             if (!string.IsNullOrEmpty(todo_to_update.Title))
                 todo.Title = todo_to_update.Title;
@@ -128,7 +128,7 @@ namespace TodoHub.Main.DataAccess.Repository
                 todo.IsCompleted = todo_to_update.IsCompleted.Value;
                 if (todo_to_update.IsCompleted.Value ==  true)
                 {
-                    var user = await _context.Users.FirstOrDefaultAsync(user => user.Id == todo.OwnerId);
+                    var user = await _context.Users.FirstOrDefaultAsync(user => user.Id == todo.OwnerId, ct);
                     
                     if (user != null)
                     {
@@ -140,7 +140,7 @@ namespace TodoHub.Main.DataAccess.Repository
             }   
 
             todo.UpdatedDate = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(ct);
             var output = _mapper.Map<TodoDTO>(todo);
             return output;
         }

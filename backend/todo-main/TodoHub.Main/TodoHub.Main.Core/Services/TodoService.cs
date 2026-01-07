@@ -35,16 +35,18 @@ namespace TodoHub.Main.Core.Services
             
         }
         // add todo 
-        public async Task<Result<TodoDTO>> AddTodoAsync(CreateTodoDTO todo, Guid OwnerId)
+        public async Task<Result<TodoDTO>> AddTodoAsync(CreateTodoDTO todo, Guid OwnerId, CancellationToken ct)
         {
             Log.Information("AddTodoAsync starting in TodoService");
+
             ValidationResult res = _createvalidator.Validate(todo);
             if (!res.IsValid)
             {
                 return Result<TodoDTO>.Fail("Incorrect data entry");
             }
-            var createdTodo = await _todoRepository.AddTodoAsyncRepo(todo, OwnerId);
-            var elastik_response = await _elastikSearchService.UpsertDoc(createdTodo, createdTodo.Id);
+            
+            var createdTodo = await ResilienceExecutor.WithTimeout(t => _todoRepository.AddTodoAsyncRepo(todo, OwnerId, t), TimeSpan.FromSeconds(5), ct);
+            var elastik_response = await ResilienceExecutor.WithTimeout(t => _elastikSearchService.UpsertDoc(createdTodo, createdTodo.Id, t), TimeSpan.FromSeconds(5), ct);
             if (!elastik_response.Success)
             {
                 return Result<TodoDTO>.Fail(elastik_response.Error);
@@ -54,22 +56,22 @@ namespace TodoHub.Main.Core.Services
         }
 
         // delete todo
-        public async Task<Result<Guid>> DeleteTodoAsync(Guid id, Guid OwnerId)
+        public async Task<Result<Guid>> DeleteTodoAsync(Guid id, Guid OwnerId, CancellationToken ct)
         {
-            var res = await _todoRepository.DeleteTodoAsyncRepo(id, OwnerId);
+            var res = await ResilienceExecutor.WithTimeout(t => _todoRepository.DeleteTodoAsyncRepo(id, OwnerId, t), TimeSpan.FromSeconds(5), ct);
             if (res == null)
             {
                 return Result<Guid>.Fail("Error deleting todo");
             }
-            await _elastikSearchService.DeleteDoc(id, OwnerId);
+            await ResilienceExecutor.WithTimeout(t => _elastikSearchService.DeleteDoc(id, OwnerId, t), TimeSpan.FromSeconds(5), ct);
             await _todoCacheService.DeleteCache(OwnerId);
             return Result<Guid>.Ok(res.Value);
         }
 
         // get todo by id
-        public async Task<Result<TodoDTO>> GetTodoByIdAsync(Guid id, Guid OwnerId)
+        public async Task<Result<TodoDTO>> GetTodoByIdAsync(Guid id, Guid OwnerId, CancellationToken ct)
         {
-            var todo = await _todoRepository.GetTodoByIdAsyncRepo(id, OwnerId);
+            var todo = await ResilienceExecutor.WithTimeout(t => _todoRepository.GetTodoByIdAsyncRepo(id, OwnerId, t), TimeSpan.FromSeconds(2), ct);
             if (todo == null)
             {
                 return Result<TodoDTO>.Fail("Todo does not exist");
@@ -78,32 +80,32 @@ namespace TodoHub.Main.Core.Services
         }
 
         // get todos
-        public async Task<Result<List<TodoDTO>>> GetTodosAsync(Guid UserId, DateTime? lastCreated, Guid? lastId)
+        public async Task<Result<List<TodoDTO>>> GetTodosAsync(Guid UserId, DateTime? lastCreated, Guid? lastId, CancellationToken ct)
         {
             var todos_redis = await _todoCacheService.GetTodosAsync(UserId, lastCreated, lastId);
             if (todos_redis?.Any() == true)
             {
                 return Result<List<TodoDTO>>.Ok(todos_redis, "Todos from redis");
             }
-            var todosPage = await _todoRepository.GetTodosByPageAsyncRepo(UserId, lastCreated, lastId);
+            var todosPage = await ResilienceExecutor.WithTimeout(t => _todoRepository.GetTodosByPageAsyncRepo(UserId, lastCreated, lastId, t), TimeSpan.FromSeconds(2), ct);
             if (todosPage == null)
             {
                 return Result<List<TodoDTO>>.Fail("Todos is empty in Database");
             }
-            var todos = await _todoRepository.GetTodosAsyncRepo(UserId);
+            var todos = await ResilienceExecutor.WithTimeout(t => _todoRepository.GetTodosAsyncRepo(UserId, t), TimeSpan.FromSeconds(2), ct);
             await _todoCacheService.SetTodosAsync(todos, UserId);
             return Result<List<TodoDTO>>.Ok(todosPage, "Todos from db");
         }
         // update todo
-        public async Task<Result<TodoDTO>> UpdateTodoAsync(UpdateTodoDTO todo, Guid OwnerId, Guid TodoId)
+        public async Task<Result<TodoDTO>> UpdateTodoAsync(UpdateTodoDTO todo, Guid OwnerId, Guid TodoId, CancellationToken ct)
         {
             ValidationResult res = _updatevalidator.Validate(todo);
             if (!res.IsValid)
             {
                 return Result<TodoDTO>.Fail("Incorrect data entry");
             }
-            var updatedTodo = await _todoRepository.UpdateTodoAsyncRepo(todo, OwnerId, TodoId);
-            await _elastikSearchService.UpsertDoc(updatedTodo, updatedTodo.Id);
+            var updatedTodo = await _todoRepository.UpdateTodoAsyncRepo(todo, OwnerId, TodoId, ct);
+            await _elastikSearchService.UpsertDoc(updatedTodo, updatedTodo.Id, ct);
             await _todoCacheService.DeleteCache(OwnerId);
             return Result<TodoDTO>.Ok(updatedTodo);
         }

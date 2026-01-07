@@ -2,6 +2,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Http.Timeouts;
 using Serilog;
 using StackExchange.Redis;
 using System.Text;
@@ -110,7 +111,7 @@ try
     // github 
     builder.Services.AddScoped<IGitHubAuthService, GitHubAuthService>();
 
-    // rebbitmq
+    // rabbitmq
 
     builder.Services.AddHostedService<TodosCleanerHostedService>();
     builder.Services.AddScoped<ITodosCleanerService, TodosCleanerService>();
@@ -132,15 +133,25 @@ try
     builder.Services.AddScoped<IElastikSearchRepository, ElastikSearchRepository>();
 
 
-    // every 12 hours
+    // every 12 hours RabbitMQ
     builder.Services.AddHostedService<RefreshTokensHostedService>();
     builder.Services.AddScoped<IRefreshTokensCleanerService, RefreshTokensCleanerService>();
 
 
     //redis
     builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
-        ConnectionMultiplexer.Connect("localhost:6379")
-    );
+    {
+        var options = ConfigurationOptions.Parse("localhost:6379");
+
+        options.ConnectTimeout = 2000;
+        options.AsyncTimeout = 2000;
+        options.SyncTimeout = 2000;
+        options.ConnectRetry = 2;
+        options.AbortOnConnectFail = false;
+
+        return ConnectionMultiplexer.Connect(options);
+    });
+
 
     // mapping
     builder.Services.AddAutoMapper(cfg => { cfg.AddProfile<MappingProfile>(); });
@@ -261,9 +272,56 @@ try
         };
     });
 
+    // Resilience.Timeouts
+    builder.Services.AddRequestTimeouts(options =>
+    {
+        options.DefaultPolicy = new RequestTimeoutPolicy
+        {
+            Timeout = TimeSpan.FromSeconds(4)
+        };
+    });
+
 
 
     var app = builder.Build();
+
+
+    
+
+    // Resilience.Timeouts
+    app.UseRequestTimeouts();
+
+
+    // Resilience.RequestAborted
+    app.Use(async (context, next) =>
+    {
+        try
+        {
+            await next();
+        }
+        catch (OperationCanceledException)
+        {
+            if (context.RequestAborted.IsCancellationRequested)
+            {
+                if (!context.Response.HasStarted)
+                    context.Response.StatusCode = 499; // Client Closed Request
+                return;
+            }
+            if (!context.Response.HasStarted)
+            {
+                context.Response.StatusCode = 504; // Gateway Timeout
+                await context.Response.WriteAsJsonAsync(new { error = "Request timed out" });
+            }
+        }
+        catch (TimeoutException)
+        {
+            if (!context.Response.HasStarted)
+            {
+                context.Response.StatusCode = 504;
+                await context.Response.WriteAsJsonAsync(new { error = "Request timed out" });
+            }
+        }
+    });
 
 
 

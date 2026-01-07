@@ -48,7 +48,7 @@ namespace TodoHub.Main.Core.Services
         }
 
         // google auth callback
-        public async Task<(string token, Result<LoginResponseDTO>)> HandleGoogleCallbackAsync(string code)
+        public async Task<(string token, Result<LoginResponseDTO>)> HandleGoogleCallbackAsync(string code, CancellationToken ct)
         {
             var config = new ConfigurationBuilder()
                .AddUserSecrets<GoogleAuthService>() // reads all keys from secrets
@@ -79,12 +79,12 @@ namespace TodoHub.Main.Core.Services
             var idToken = payload.GetProperty("id_token").GetString();
             var userInfo = ParseIdToken(idToken);
 
-            var user_from_db = await _userRepository.GetUserByEmailAsyncRepo(userInfo.Email);
+            var user_from_db = await ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByEmailAsyncRepo(userInfo.Email, t), TimeSpan.FromSeconds(5), ct);
 
             if (user_from_db  == null)
             {
-                await _userRepository.AddGoogleUserAsyncRepo(userInfo);
-                user_from_db = await _userRepository.GetUserByEmailAsyncRepo(userInfo.Email);
+                await ResilienceExecutor.WithTimeout(t => _userRepository.AddGoogleUserAsyncRepo(userInfo, t), TimeSpan.FromSeconds(5), ct);
+                user_from_db = await ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByEmailAsyncRepo(userInfo.Email, t), TimeSpan.FromSeconds(5), ct);
             }
 
             if (user_from_db.GoogleId == null)
@@ -95,7 +95,7 @@ namespace TodoHub.Main.Core.Services
             
 
             var accessToken = GenerateAccessToken(user_from_db);
-            var refreshToken = await GenerateRefreshToken(user_from_db);
+            var refreshToken = await GenerateRefreshToken(user_from_db, ct);
 
             return (refreshToken, Result<LoginResponseDTO>.Ok(accessToken));
         }
@@ -140,9 +140,9 @@ namespace TodoHub.Main.Core.Services
             return response;
         }
 
-        private async Task<string?> GenerateRefreshToken(UserEntity user) 
+        private async Task<string?> GenerateRefreshToken(UserEntity user, CancellationToken ct) 
         {
-            return await _passwordService.AddRefreshToken(user.Id);
+            return await _passwordService.AddRefreshToken(user.Id, ct);
         }
     }
 }
