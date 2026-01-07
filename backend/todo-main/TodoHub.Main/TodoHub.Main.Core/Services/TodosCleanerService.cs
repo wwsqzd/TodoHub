@@ -1,4 +1,5 @@
-﻿using TodoHub.Main.Core.Interfaces;
+﻿using TodoHub.Main.Core.Common;
+using TodoHub.Main.Core.Interfaces;
 
 namespace TodoHub.Main.Core.Services
 {
@@ -11,9 +12,9 @@ namespace TodoHub.Main.Core.Services
         {
             _repository = repository;
         }
-        public async Task CleanALlTodosByUser(Guid ownerId)
+        public async Task CleanALlTodosByUser(Guid ownerId, CancellationToken ct)
         {
-            await _repository.DeleteAllTodoByUserAsyncRepo(ownerId);
+            await ResilienceExecutor.WithTimeout(t => _repository.DeleteAllTodoByUserAsyncRepo(ownerId, t), TimeSpan.FromSeconds(5), ct);
         }
     }
 }

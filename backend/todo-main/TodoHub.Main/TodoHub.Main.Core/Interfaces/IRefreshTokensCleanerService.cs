@@ -2,6 +2,6 @@
 {
     public interface IRefreshTokensCleanerService
     {
-        Task CleanAllRefreshTokens();
+        Task CleanAllRefreshTokens(CancellationToken ct);
     }
 }

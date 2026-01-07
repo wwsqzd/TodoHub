@@ -16,7 +16,7 @@ namespace TodoHub.Main.API.Controllers
         }
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> SearchDocuments([FromQuery] string q)
+        public async Task<IActionResult> SearchDocuments([FromQuery] string q, CancellationToken ct)
         {
             Log.Information("Search in Documents starting in Controller");
             if (string.IsNullOrWhiteSpace(q))
@@ -26,7 +26,7 @@ namespace TodoHub.Main.API.Controllers
             if (userIdClaim is null || !Guid.TryParse(userIdClaim, out var userId))
                 return Unauthorized("Invalid token");
             
-            var res = await _searchService.SearchDocuments(userId, q);
+            var res = await _searchService.SearchDocuments(userId, q, ct);
             if (!res.Success)
             {
                 return BadRequest(res.Error);

@@ -1,6 +1,4 @@
-﻿
-
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -52,7 +50,7 @@ namespace TodoHub.Main.Core.Services
                    $"&state={state}";
         }
 
-        public async Task<(string token, Result<LoginResponseDTO>)> HandleGitHubCallbackAsync(string code)
+        public async Task<(string token, Result<LoginResponseDTO>)> HandleGitHubCallbackAsync(string code, CancellationToken ct)
         {
             var _configuration = new ConfigurationBuilder()
                .AddUserSecrets<GitHubAuthService>() // reads all keys from secrets
@@ -147,12 +145,12 @@ namespace TodoHub.Main.Core.Services
             }
 
             
-            var userFromDb = await _userRepository.GetUserByEmailAsyncRepo(userInfo.Email);
+            var userFromDb = await ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByEmailAsyncRepo(userInfo.Email, t), TimeSpan.FromSeconds(5), ct);
 
             if (userFromDb == null)
             {
-                await _userRepository.AddGitHubUserAsyncRepo(userInfo);
-                userFromDb = await _userRepository.GetUserByEmailAsyncRepo(userInfo.Email);
+                await ResilienceExecutor.WithTimeout(t => _userRepository.AddGitHubUserAsyncRepo(userInfo, t), TimeSpan.FromSeconds(5), ct);
+                userFromDb = await ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByEmailAsyncRepo(userInfo.Email, t), TimeSpan.FromSeconds(5), ct);
             }
 
             
@@ -162,7 +160,7 @@ namespace TodoHub.Main.Core.Services
             }
 
             var jwtAccessToken = GenerateAccessToken(userFromDb);
-            var refreshToken = await GenerateRefreshToken(userFromDb);
+            var refreshToken = await GenerateRefreshToken(userFromDb, ct);
 
             return (refreshToken, Result<LoginResponseDTO>.Ok(jwtAccessToken));
         }
@@ -177,9 +175,9 @@ namespace TodoHub.Main.Core.Services
             };
         }
 
-        private async Task<string?> GenerateRefreshToken(UserEntity user)
+        private async Task<string?> GenerateRefreshToken(UserEntity user, CancellationToken ct)
         {
-            return await _passwordService.AddRefreshToken(user.Id);
+            return await _passwordService.AddRefreshToken(user.Id, ct);
         }
     }
 }

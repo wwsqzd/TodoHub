@@ -22,7 +22,7 @@ namespace TodoHub.Main.Core.Services
                 var tokensService = scope.ServiceProvider.GetRequiredService<IRefreshTokensCleanerService>();
 
                 // delete all old refresh tokens
-                await tokensService.CleanAllRefreshTokens();
+                await tokensService.CleanAllRefreshTokens(stoppingToken);
 
                 // Wait 12 Hours
                 await Task.Delay(TimeSpan.FromHours(12), stoppingToken);

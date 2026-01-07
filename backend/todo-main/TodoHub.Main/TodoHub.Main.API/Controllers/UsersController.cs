@@ -25,7 +25,7 @@ namespace TodoHub.Main.API.Controllers
 
         [HttpGet("profile")]
         [Authorize]
-        public async Task<IActionResult> GetProfile()
+        public async Task<IActionResult> GetProfile(CancellationToken ct)
         {
             // take the ID from the token
             var userIdClaim = User.FindFirst("UserId")?.Value;
@@ -36,7 +36,7 @@ namespace TodoHub.Main.API.Controllers
             if (!Guid.TryParse(userIdClaim, out var userId))
                 return BadRequest("Invalid user id in token");
             // search for id
-            var user = await _userService.GetMe(userId);
+            var user = await _userService.GetMe(userId, ct);
             if (!user.Success)
                 return NotFound();
             // return
@@ -47,13 +47,13 @@ namespace TodoHub.Main.API.Controllers
         // only allowed if the user is an administrator
         [Authorize(Roles = "Admin")]
         [HttpGet("users")]
-        public async Task<ActionResult<List<UserDTO>>> GetUsers()
+        public async Task<ActionResult<List<UserDTO>>> GetUsers(CancellationToken ct)
         {
             var userIdClaim = User.FindFirst("UserId")?.Value;
 
             if (userIdClaim is null)
                 return Unauthorized();
-            var users = await _userService.GetUsersAsync();
+            var users = await _userService.GetUsersAsync(ct);
             return Ok(users);
         }
 
@@ -61,13 +61,13 @@ namespace TodoHub.Main.API.Controllers
         // only allowed if the user is an administrator
         [Authorize(Roles = "Admin")]
         [HttpGet("profile/{id}")]
-        public async Task<ActionResult<UserDTO>> GetUserById(Guid id)
+        public async Task<ActionResult<UserDTO>> GetUserById(Guid id, CancellationToken ct)
         {
             var userIdClaim = User.FindFirst("UserId")?.Value;
             if (userIdClaim is null)
                 return Unauthorized();
 
-            var user = await _userService.GetUserByIdAsync(id);
+            var user = await _userService.GetUserByIdAsync(id, ct);
             return Ok(user);
         }
 
@@ -76,13 +76,13 @@ namespace TodoHub.Main.API.Controllers
         // only allowed if the user is an administrator
         [Authorize(Roles = "Admin")]
         [HttpDelete("user/delete/{id}")]
-        public async Task<IActionResult> DeleteUser(Guid id)
+        public async Task<IActionResult> DeleteUser(Guid id, CancellationToken ct)
         {
             var userIdClaim = User.FindFirst("UserId")?.Value;
             if (userIdClaim is null)
                 return Unauthorized();
 
-            var result = await _userService.DeleteUserAsync(id);
+            var result = await _userService.DeleteUserAsync(id, ct);
 
             var dto = new MessageEnvelope{ 
                 Command = "Clean Todos By User", 
@@ -100,7 +100,7 @@ namespace TodoHub.Main.API.Controllers
 
         [HttpGet("profile/role")]
         [Authorize]
-        public async Task<IActionResult> UserRole()
+        public async Task<IActionResult> UserRole(CancellationToken ct)
         {
             // take the ID from the token
             var userIdClaim = User.FindFirst("UserId")?.Value;
@@ -111,7 +111,7 @@ namespace TodoHub.Main.API.Controllers
             if (!Guid.TryParse(userIdClaim, out var userId))
                 return BadRequest("Invalid user id in token");
 
-            var res = await _userService.IsUserAdmin(userId);
+            var res = await _userService.IsUserAdmin(userId, ct);
             if (!res.Success) {
                 return BadRequest();
             }
@@ -121,14 +121,14 @@ namespace TodoHub.Main.API.Controllers
 
         [HttpPatch("profile/language")]
         [Authorize]
-        public async Task<IActionResult> ChangeUserLanguage([FromBody] ChangeLanguageDTO language_dto)
+        public async Task<IActionResult> ChangeUserLanguage([FromBody] ChangeLanguageDTO language_dto, CancellationToken ct)
         {
             // take the ID from the token
             var userIdClaim = User.FindFirst("UserId")?.Value;
             if (userIdClaim is null || !Guid.TryParse(userIdClaim, out var userId))
                 return Unauthorized("Invalid token");
 
-            var res = await _userService.ChangeUserLanguage(language_dto, userId);
+            var res = await _userService.ChangeUserLanguage(language_dto, userId, ct);
             if (!res.Success)
             {
                 return BadRequest();

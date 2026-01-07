@@ -1,4 +1,5 @@
 ﻿
+using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Serilog;
@@ -26,9 +27,9 @@ namespace TodoHub.Main.API.Controllers
         // "auth/login"
         [HttpPost("login")]
         [EnableRateLimiting("LoginPolicy")]
-        public async Task<IActionResult> Login([FromBody] LoginDTO dto)
+        public async Task<IActionResult> Login([FromBody] LoginDTO dto, CancellationToken ct)
         {
-            var (token, response)= await _userService.LoginUserAsync(dto);
+            var (token, response)= await _userService.LoginUserAsync(dto, ct);
             
             if (!response.Success)
             {
@@ -59,7 +60,7 @@ namespace TodoHub.Main.API.Controllers
         // Google Auth
         [HttpGet("login/google")]
         [EnableRateLimiting("LoginPolicy")]
-        public IActionResult LoginGoogle()
+        public IActionResult LoginGoogle(CancellationToken ct)
         {
             var redirectUrl = _googleAuthService.GetGoogleLoginUrl();
             return Redirect(redirectUrl);
@@ -67,14 +68,14 @@ namespace TodoHub.Main.API.Controllers
 
         // Google Auth
         [HttpGet("login/google/callback")]
-        public async Task<IActionResult> LoginGoogleCallBack([FromQuery] string code)
+        public async Task<IActionResult> LoginGoogleCallBack([FromQuery] string code, CancellationToken ct)
         {
             if (string.IsNullOrEmpty(code))
             {
                 return BadRequest("No code received from Google");
             }
 
-            var (refreshToken, accessToken) = await _googleAuthService.HandleGoogleCallbackAsync(code);
+            var (refreshToken, accessToken) = await _googleAuthService.HandleGoogleCallbackAsync(code, ct);
             if (refreshToken == "" && accessToken == null) return Unauthorized();
 
             Response.Cookies.Append("accessToken", accessToken.Value.Token, new CookieOptions
@@ -100,7 +101,7 @@ namespace TodoHub.Main.API.Controllers
 
         //GitHub Auth
         [HttpGet("login/github")]
-        public IActionResult LoginGitHub()
+        public IActionResult LoginGitHub(CancellationToken ct)
         {
             var redirectUrl = _gitHubAuthService.GetGitHubLoginUrl();
             return Redirect(redirectUrl);
@@ -108,14 +109,14 @@ namespace TodoHub.Main.API.Controllers
 
         // GitHub Auth
         [HttpGet("login/github/callback")]
-        public async Task<IActionResult> LoginGitHubCallBack([FromQuery] string code)
+        public async Task<IActionResult> LoginGitHubCallBack([FromQuery] string code, CancellationToken ct)
         {
             if (string.IsNullOrEmpty(code))
             {
                 return BadRequest("No code received from Github");
             }
 
-            var (refreshToken, accessToken) = await _gitHubAuthService.HandleGitHubCallbackAsync(code);
+            var (refreshToken, accessToken) = await _gitHubAuthService.HandleGitHubCallbackAsync(code, ct);
             if (accessToken.Success == false) return BadRequest($"{accessToken.Error}");
             if (refreshToken == "" && accessToken.Value.Token == null) return Unauthorized();
 
@@ -142,9 +143,9 @@ namespace TodoHub.Main.API.Controllers
         //"auth/register"
         [HttpPost("register")]
         [EnableRateLimiting("SignUpPolicy")]
-        public async Task<IActionResult> AddUser([FromBody] RegisterDTO user)
+        public async Task<IActionResult> AddUser([FromBody] RegisterDTO user, CancellationToken ct)
         {
-            var result = await _userService.AddUserAsync(user);
+            var result = await _userService.AddUserAsync(user, ct);
             if (!result.Success)
             {
                 return Conflict(result);
@@ -160,7 +161,7 @@ namespace TodoHub.Main.API.Controllers
         // "auth/refresh"
         [HttpPost("refresh")]
         [EnableRateLimiting("RefreshPolicy")]
-        public async Task<IActionResult> RefreshToken()
+        public async Task<IActionResult> RefreshToken(CancellationToken ct)
         {
             Log.Information($"[REFRESH REQUEST] Received refresh token request at {DateTime.UtcNow}");
             if (!Request.Cookies.TryGetValue("refreshToken", out var refreshToken))
@@ -170,7 +171,7 @@ namespace TodoHub.Main.API.Controllers
                 return Unauthorized("Refresh token not found");
             }
             
-            var (token, response) = await _userService.RefreshLoginAsync(refreshToken);
+            var (token, response) = await _userService.RefreshLoginAsync(refreshToken, ct);
 
             if (!response.Success)
             {
@@ -202,7 +203,7 @@ namespace TodoHub.Main.API.Controllers
 
         // "auth/logout"
         [HttpPost("logout")]
-        public async Task<IActionResult> Logout()
+        public async Task<IActionResult> Logout(CancellationToken ct)
         {
             if (!Request.Cookies.TryGetValue("refreshToken", out var refreshToken))
             {
@@ -210,7 +211,7 @@ namespace TodoHub.Main.API.Controllers
                 Log.Error("Refresh token not found in Log Out ");
                 return Unauthorized("Refresh token not found");
             }
-            var result = await _userService.LogoutUserAsync(refreshToken);
+            var result = await _userService.LogoutUserAsync(refreshToken, ct);
             if (!result.Success)
             {
                 return BadRequest(result.Error);

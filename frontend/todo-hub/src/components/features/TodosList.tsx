@@ -1,12 +1,10 @@
 import React, { forwardRef, useState, useMemo, useRef } from "react";
 import TodoItem from "./TodoItem";
 import ButtonUI from "../ui/ButtonUI";
-import LoadingUI from "../ui/LoadingUI";
 import { Todo } from "@/types";
 import { useLanguage } from "@/context/LanguageContext";
 import { translations } from "@/lib/dictionary";
 import { FaSortAmountDown, FaSortAmountDownAlt } from "react-icons/fa";
-import { IoIosSearch } from "react-icons/io";
 import { searchTodos } from "@/lib/api";
 
 type Props = {

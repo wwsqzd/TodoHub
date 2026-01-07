@@ -6,6 +6,6 @@ namespace TodoHub.Main.Core.Interfaces
     public interface IGitHubAuthService
     {
         string GetGitHubLoginUrl();
-        Task<(string token, Result<LoginResponseDTO>)> HandleGitHubCallbackAsync(string code);
+        Task<(string token, Result<LoginResponseDTO>)> HandleGitHubCallbackAsync(string code, CancellationToken ct);
     }
 }

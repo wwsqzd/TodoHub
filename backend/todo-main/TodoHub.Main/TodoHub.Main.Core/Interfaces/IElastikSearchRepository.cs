@@ -1,5 +1,4 @@
-﻿using TodoHub.Main.Core.DTOs.Request;
-using TodoHub.Main.Core.DTOs.Response;
+﻿using TodoHub.Main.Core.DTOs.Response;
 
 namespace TodoHub.Main.Core.Interfaces
 {
@@ -7,8 +6,8 @@ namespace TodoHub.Main.Core.Interfaces
     {
         Task<bool> CreateIndexRepo();
         Task<bool> ReIndexRepo();
-        Task<bool> UpsertDocRepo(TodoDTO todo, Guid TodoId);
-        Task<List<TodoDTO>> SearchDocumentsRepo(Guid userId, string query);
-        Task<bool> DeleteDocRepo(Guid TodoId, Guid OwnerId);
+        Task<bool> UpsertDocRepo(TodoDTO todo, Guid TodoId, CancellationToken ct);
+        Task<List<TodoDTO>> SearchDocumentsRepo(Guid userId, string query, CancellationToken ct);
+        Task<bool> DeleteDocRepo(Guid TodoId, Guid OwnerId, CancellationToken ct);
     }
 }

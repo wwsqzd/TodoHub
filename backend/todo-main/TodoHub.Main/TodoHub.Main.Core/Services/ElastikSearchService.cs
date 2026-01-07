@@ -1,5 +1,4 @@
-﻿
-using Serilog;
+﻿using Serilog;
 using TodoHub.Main.Core.Common;
 using TodoHub.Main.Core.DTOs.Response;
 using TodoHub.Main.Core.Interfaces;
@@ -15,22 +14,6 @@ namespace TodoHub.Main.Core.Services
             _repository = repository;
         }
 
-        public async Task<Result<bool>> UpsertDoc(TodoDTO todo, Guid todoId)
-        {
-            try
-            {
-                Log.Information("UpsertDoc starting in ESS");
-                var res = await _repository.UpsertDocRepo(todo, todoId);
-                return res
-                    ? Result<bool>.Ok(true)
-                    : Result<bool>.Fail("Failed to upsert document");
-            }
-            catch (Exception ex)
-            {
-                return Result<bool>.Fail($"Exception: {ex.Message}");
-            }
-        }
-
         public async Task<Result<bool>> CreateIndex()
         {
             try
@@ -41,23 +24,6 @@ namespace TodoHub.Main.Core.Services
                 return response
                     ? Result<bool>.Ok(true)
                     : Result<bool>.Fail("Failed to create index");
-            }
-            catch (Exception ex)
-            {
-                return Result<bool>.Fail($"Exception: {ex.Message}");
-            }
-        }
-
-
-        public async Task<Result<bool>> DeleteDoc(Guid todoId, Guid ownerId)
-        {
-            try
-            {
-                Log.Information("DeleteDoc starting in ESS");
-                var res = await _repository.DeleteDocRepo(todoId, ownerId);
-                return res
-                    ? Result<bool>.Ok(true)
-                    : Result<bool>.Fail("Failed to delete document");
             }
             catch (Exception ex)
             {
@@ -81,12 +47,47 @@ namespace TodoHub.Main.Core.Services
             }
         }
 
-        public async Task<Result<List<TodoDTO>>> SearchDocuments(Guid userId, string query)
+        public async Task<Result<bool>> UpsertDoc(TodoDTO todo, Guid todoId, CancellationToken ct)
+        {
+            try
+            {
+                Log.Information("UpsertDoc starting in ESS");
+                var res = await ResilienceExecutor.WithTimeout(t => _repository.UpsertDocRepo(todo, todoId, t), TimeSpan.FromSeconds(5), ct);
+                return res
+                    ? Result<bool>.Ok(true)
+                    : Result<bool>.Fail("Failed to upsert document");
+            }
+            catch (Exception ex)
+            {
+                return Result<bool>.Fail($"Exception: {ex.Message}");
+            }
+        }
+
+
+        public async Task<Result<bool>> DeleteDoc(Guid todoId, Guid ownerId, CancellationToken ct)
+        {
+            try
+            {
+                Log.Information("DeleteDoc starting in ESS");
+                var res = await ResilienceExecutor.WithTimeout(t => _repository.DeleteDocRepo(todoId, ownerId, t), TimeSpan.FromSeconds(5), ct);
+                return res
+                    ? Result<bool>.Ok(true)
+                    : Result<bool>.Fail("Failed to delete document");
+            }
+            catch (Exception ex)
+            {
+                return Result<bool>.Fail($"Exception: {ex.Message}");
+            }
+        }
+
+        
+
+        public async Task<Result<List<TodoDTO>>> SearchDocuments(Guid userId, string query, CancellationToken ct)
         {
             try
             {
                 Log.Information("SearchDocuments starting in ESS");
-                var res = await _repository.SearchDocumentsRepo(userId, query);
+                var res = await ResilienceExecutor.WithTimeout(t => _repository.SearchDocumentsRepo(userId, query, t), TimeSpan.FromSeconds(2), ct);
                 return Result<List<TodoDTO>>.Ok(res ?? new List<TodoDTO>());
             }
             catch (Exception ex)
