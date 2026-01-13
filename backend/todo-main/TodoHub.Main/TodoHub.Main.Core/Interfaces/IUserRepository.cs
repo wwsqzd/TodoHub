@@ -7,7 +7,7 @@ namespace TodoHub.Main.Core.Interfaces
 {
     public interface IUserRepository
     {
-        Task AddUserAsyncRepo(RegisterDTO user, CancellationToken ct);
+        Task<bool> AddUserAsyncRepo(RegisterDTO user, CancellationToken ct);
         Task<bool> DeleteUserAsyncRepo(Guid id, CancellationToken ct);
         Task<UserEntity?> GetUserByEmailAsyncRepo(string email, CancellationToken ct);
         Task<UserEntity?> GetUserByIdAsyncRepo(Guid id, CancellationToken ct);

@@ -15,13 +15,15 @@ namespace TodoHub.Main.Core.Services
         private readonly IPasswordService _passwordService;
         private readonly IJwtService _jwtService;
         private readonly IUserRepository _userRepository;
+        private readonly DbBulkhead _dbBulkhead;
 
-        public GoogleAuthService(IHttpClientFactory httpClientFactory, IPasswordService passwordService, IJwtService jwtService, IUserRepository userRepository)
+        public GoogleAuthService(IHttpClientFactory httpClientFactory, IPasswordService passwordService, IJwtService jwtService, IUserRepository userRepository, DbBulkhead dbBulkhead)
         {
             _httpClientFactory = httpClientFactory;
             _passwordService = passwordService;
             _jwtService = jwtService;
             _userRepository = userRepository;
+            _dbBulkhead = dbBulkhead;
         }
 
         // google auth link
@@ -79,12 +81,12 @@ namespace TodoHub.Main.Core.Services
             var idToken = payload.GetProperty("id_token").GetString();
             var userInfo = ParseIdToken(idToken);
 
-            var user_from_db = await ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByEmailAsyncRepo(userInfo.Email, t), TimeSpan.FromSeconds(5), ct);
+            var user_from_db = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByEmailAsyncRepo(userInfo.Email, t), TimeSpan.FromSeconds(5), bct), ct);
 
             if (user_from_db  == null)
             {
                 await ResilienceExecutor.WithTimeout(t => _userRepository.AddGoogleUserAsyncRepo(userInfo, t), TimeSpan.FromSeconds(5), ct);
-                user_from_db = await ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByEmailAsyncRepo(userInfo.Email, t), TimeSpan.FromSeconds(5), ct);
+                await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByEmailAsyncRepo(userInfo.Email, t), TimeSpan.FromSeconds(5), bct), ct);
             }
 
             if (user_from_db.GoogleId == null)

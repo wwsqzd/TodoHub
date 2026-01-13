@@ -17,6 +17,7 @@ using TodoHub.Main.DataAccess.Interfaces;
 using TodoHub.Main.DataAccess.Repository;
 using Elastic.Clients.Elasticsearch;
 using Prometheus;
+using TodoHub.Main.Core.Common;
 
 
 // logger
@@ -280,6 +281,12 @@ try
             Timeout = TimeSpan.FromSeconds(4)
         };
     });
+
+
+    // Bulkhead for DB and ES
+    builder.Services.AddSingleton<DbBulkhead>();
+    builder.Services.AddSingleton<EsBulkhead>();
+
 
 
 

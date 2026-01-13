@@ -15,21 +15,21 @@ namespace TodoHub.Main.Core.Services
         private readonly IPasswordService _passwordService;
         private readonly IJwtService _jwtService;
         private readonly IUserRepository _userRepository;
-        //private readonly IConfiguration _configuration; 
+        private readonly DbBulkhead _dbBulkhead;
 
         public GitHubAuthService(
             IHttpClientFactory httpClientFactory,
             IPasswordService passwordService,
             IJwtService jwtService,
-            IUserRepository userRepository
-            //IConfiguration configuration
+            IUserRepository userRepository,
+            DbBulkhead dbBulkhead
             )
         {
             _httpClientFactory = httpClientFactory;
             _passwordService = passwordService;
             _jwtService = jwtService;
             _userRepository = userRepository;
-            //_configuration = configuration;
+            _dbBulkhead = dbBulkhead;
         }
 
         public string GetGitHubLoginUrl()
@@ -145,15 +145,15 @@ namespace TodoHub.Main.Core.Services
             }
 
             
-            var userFromDb = await ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByEmailAsyncRepo(userInfo.Email, t), TimeSpan.FromSeconds(5), ct);
+            var userFromDb = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByEmailAsyncRepo(userInfo.Email, t), TimeSpan.FromSeconds(5), bct), ct);
 
             if (userFromDb == null)
             {
                 await ResilienceExecutor.WithTimeout(t => _userRepository.AddGitHubUserAsyncRepo(userInfo, t), TimeSpan.FromSeconds(5), ct);
-                userFromDb = await ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByEmailAsyncRepo(userInfo.Email, t), TimeSpan.FromSeconds(5), ct);
+                userFromDb = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByEmailAsyncRepo(userInfo.Email, t), TimeSpan.FromSeconds(5), bct), ct);
             }
 
-            
+
             if (userFromDb?.GitHubId == null)
             {
                 return ("", Result<LoginResponseDTO>.Fail("User exists but GitHub is not linked."));
