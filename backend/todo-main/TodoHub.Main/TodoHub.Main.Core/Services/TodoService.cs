@@ -16,6 +16,8 @@ namespace TodoHub.Main.Core.Services
         private readonly AbstractValidator<UpdateTodoDTO> _updatevalidator;
         private readonly ITodoCacheService _todoCacheService;
         private readonly IElastikSearchService _elastikSearchService;
+        private readonly DbBulkhead _dbBulkhead;
+        private readonly EsBulkhead _esBulkhead;
         
 
         public TodoService(
@@ -23,7 +25,9 @@ namespace TodoHub.Main.Core.Services
             AbstractValidator<CreateTodoDTO> create_validator,
             AbstractValidator<UpdateTodoDTO> updatevalidator,
             ITodoCacheService todoCacheService,
-            IElastikSearchService elastikSearchService
+            IElastikSearchService elastikSearchService,
+            DbBulkhead dbBulkhead,
+            EsBulkhead esBulkhead
             
             )
         {
@@ -32,6 +36,8 @@ namespace TodoHub.Main.Core.Services
             _updatevalidator = updatevalidator;
             _todoCacheService = todoCacheService;
             _elastikSearchService = elastikSearchService;
+            _dbBulkhead = dbBulkhead;
+            _esBulkhead = esBulkhead;
             
         }
         // add todo 
@@ -44,70 +50,101 @@ namespace TodoHub.Main.Core.Services
             {
                 return Result<TodoDTO>.Fail("Incorrect data entry");
             }
-            
-            var createdTodo = await ResilienceExecutor.WithTimeout(t => _todoRepository.AddTodoAsyncRepo(todo, OwnerId, t), TimeSpan.FromSeconds(5), ct);
-            var elastik_response = await ResilienceExecutor.WithTimeout(t => _elastikSearchService.UpsertDoc(createdTodo, createdTodo.Id, t), TimeSpan.FromSeconds(5), ct);
-            if (!elastik_response.Success)
+
+            try
             {
-                return Result<TodoDTO>.Fail(elastik_response.Error);
+                var createdTodo = await _dbBulkhead.ExecuteAsync(bulkCt => ResilienceExecutor.WithTimeout(t => _todoRepository.AddTodoAsyncRepo(todo, OwnerId, t),TimeSpan.FromSeconds(5),bulkCt),ct);
+                var elastik_response = await _esBulkhead.ExecuteAsync(bulkCt => ResilienceExecutor.WithTimeout(t => _elastikSearchService.UpsertDoc(createdTodo, createdTodo.Id, t), TimeSpan.FromSeconds(5), bulkCt),ct);
+
+                if (!elastik_response.Success)
+                {
+                    return Result<TodoDTO>.Fail(elastik_response.Error);
+                }
+                await _todoCacheService.DeleteCache(OwnerId);
+                return Result<TodoDTO>.Ok(createdTodo);
+            } catch (BulkheadRejektedException ex)
+            {
+                return Result<TodoDTO>.Fail($"Overloaded: {ex.Message}");
             }
-            await _todoCacheService.DeleteCache(OwnerId);
-            return Result<TodoDTO>.Ok(createdTodo);
         }
 
         // delete todo
         public async Task<Result<Guid>> DeleteTodoAsync(Guid id, Guid OwnerId, CancellationToken ct)
         {
-            var res = await ResilienceExecutor.WithTimeout(t => _todoRepository.DeleteTodoAsyncRepo(id, OwnerId, t), TimeSpan.FromSeconds(5), ct);
-            if (res == null)
+            try
             {
-                return Result<Guid>.Fail("Error deleting todo");
+                var res = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _todoRepository.DeleteTodoAsyncRepo(id, OwnerId, t), TimeSpan.FromSeconds(5), bct), ct);
+                if (res == null)
+                {
+                    return Result<Guid>.Fail("Error deleting todo");
+                }
+                await _esBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _elastikSearchService.DeleteDoc(id, OwnerId, t), TimeSpan.FromSeconds(5), bct), ct);
+                await _todoCacheService.DeleteCache(OwnerId);
+                return Result<Guid>.Ok(res.Value);
+            } catch (BulkheadRejektedException ex)
+            {
+                return Result<Guid>.Fail($"Overloaded: {ex.Message}");
             }
-            await ResilienceExecutor.WithTimeout(t => _elastikSearchService.DeleteDoc(id, OwnerId, t), TimeSpan.FromSeconds(5), ct);
-            await _todoCacheService.DeleteCache(OwnerId);
-            return Result<Guid>.Ok(res.Value);
         }
 
         // get todo by id
         public async Task<Result<TodoDTO>> GetTodoByIdAsync(Guid id, Guid OwnerId, CancellationToken ct)
         {
-            var todo = await ResilienceExecutor.WithTimeout(t => _todoRepository.GetTodoByIdAsyncRepo(id, OwnerId, t), TimeSpan.FromSeconds(2), ct);
-            if (todo == null)
+            try
             {
-                return Result<TodoDTO>.Fail("Todo does not exist");
+                var todo = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _todoRepository.GetTodoByIdAsyncRepo(id, OwnerId, t), TimeSpan.FromSeconds(2), bct), ct);
+                if (todo == null)
+                {
+                    return Result<TodoDTO>.Fail("Todo does not exist");
+                }
+                return Result<TodoDTO>.Ok(todo);
+            } catch (BulkheadRejektedException ex)
+            {
+                return Result<TodoDTO>.Fail($"Overloaded: {ex.Message}");
             }
-            return Result<TodoDTO>.Ok(todo);
         }
 
         // get todos
         public async Task<Result<List<TodoDTO>>> GetTodosAsync(Guid UserId, DateTime? lastCreated, Guid? lastId, CancellationToken ct)
         {
-            var todos_redis = await _todoCacheService.GetTodosAsync(UserId, lastCreated, lastId);
-            if (todos_redis?.Any() == true)
+            try
             {
-                return Result<List<TodoDTO>>.Ok(todos_redis, "Todos from redis");
-            }
-            var todosPage = await ResilienceExecutor.WithTimeout(t => _todoRepository.GetTodosByPageAsyncRepo(UserId, lastCreated, lastId, t), TimeSpan.FromSeconds(2), ct);
-            if (todosPage == null)
+                var todos_redis = await _todoCacheService.GetTodosAsync(UserId, lastCreated, lastId);
+                if (todos_redis.Any() == true)
+                {
+                    return Result<List<TodoDTO>>.Ok(todos_redis, "Todos from redis");
+                }
+                var todosPage = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _todoRepository.GetTodosByPageAsyncRepo(UserId, lastCreated, lastId, t), TimeSpan.FromSeconds(2), bct), ct);
+                if (todosPage == null)
+                {
+                    return Result<List<TodoDTO>>.Fail("Todos is empty in Database");
+                }
+                var todos = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _todoRepository.GetTodosAsyncRepo(UserId, t), TimeSpan.FromSeconds(2), bct), ct);
+                await _todoCacheService.SetTodosAsync(todos, UserId);
+                return Result<List<TodoDTO>>.Ok(todosPage, "Todos from db");
+            } catch (BulkheadRejektedException ex)
             {
-                return Result<List<TodoDTO>>.Fail("Todos is empty in Database");
+                return Result<List<TodoDTO>>.Fail($"Overloaded: {ex.Message}");
             }
-            var todos = await ResilienceExecutor.WithTimeout(t => _todoRepository.GetTodosAsyncRepo(UserId, t), TimeSpan.FromSeconds(2), ct);
-            await _todoCacheService.SetTodosAsync(todos, UserId);
-            return Result<List<TodoDTO>>.Ok(todosPage, "Todos from db");
         }
         // update todo
         public async Task<Result<TodoDTO>> UpdateTodoAsync(UpdateTodoDTO todo, Guid OwnerId, Guid TodoId, CancellationToken ct)
         {
-            ValidationResult res = _updatevalidator.Validate(todo);
-            if (!res.IsValid)
+            try
             {
-                return Result<TodoDTO>.Fail("Incorrect data entry");
+                ValidationResult res = _updatevalidator.Validate(todo);
+                if (!res.IsValid)
+                {
+                    return Result<TodoDTO>.Fail("Incorrect data entry");
+                }
+                var updatedTodo = await _dbBulkhead.ExecuteAsync(bct => _todoRepository.UpdateTodoAsyncRepo(todo, OwnerId, TodoId, bct), ct);
+                await _esBulkhead.ExecuteAsync(bct => _elastikSearchService.UpsertDoc(updatedTodo, updatedTodo.Id, bct), ct);
+                await _todoCacheService.DeleteCache(OwnerId);
+                return Result<TodoDTO>.Ok(updatedTodo);
+            } catch (BulkheadRejektedException ex)
+            {
+                return Result<TodoDTO>.Fail($"Overloaded: {ex.Message}");
             }
-            var updatedTodo = await _todoRepository.UpdateTodoAsyncRepo(todo, OwnerId, TodoId, ct);
-            await _elastikSearchService.UpsertDoc(updatedTodo, updatedTodo.Id, ct);
-            await _todoCacheService.DeleteCache(OwnerId);
-            return Result<TodoDTO>.Ok(updatedTodo);
         }
     }
 }

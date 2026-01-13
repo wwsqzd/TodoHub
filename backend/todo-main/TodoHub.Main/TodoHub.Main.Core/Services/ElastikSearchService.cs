@@ -8,10 +8,12 @@ namespace TodoHub.Main.Core.Services
     public class ElastikSearchService : IElastikSearchService
     {
         private readonly IElastikSearchRepository _repository;
+        private readonly EsBulkhead _esBulkhead;
 
-        public ElastikSearchService(IElastikSearchRepository repository)
+        public ElastikSearchService(IElastikSearchRepository repository, EsBulkhead esBulkhead)
         {
             _repository = repository;
+            _esBulkhead = esBulkhead;
         }
 
         public async Task<Result<bool>> CreateIndex()
@@ -52,7 +54,7 @@ namespace TodoHub.Main.Core.Services
             try
             {
                 Log.Information("UpsertDoc starting in ESS");
-                var res = await ResilienceExecutor.WithTimeout(t => _repository.UpsertDocRepo(todo, todoId, t), TimeSpan.FromSeconds(5), ct);
+                var res = await _esBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _repository.UpsertDocRepo(todo, todoId, t), TimeSpan.FromSeconds(5), bct), ct);
                 return res
                     ? Result<bool>.Ok(true)
                     : Result<bool>.Fail("Failed to upsert document");
@@ -69,7 +71,7 @@ namespace TodoHub.Main.Core.Services
             try
             {
                 Log.Information("DeleteDoc starting in ESS");
-                var res = await ResilienceExecutor.WithTimeout(t => _repository.DeleteDocRepo(todoId, ownerId, t), TimeSpan.FromSeconds(5), ct);
+                var res = await _esBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _repository.DeleteDocRepo(todoId, ownerId, t), TimeSpan.FromSeconds(5), bct), ct);
                 return res
                     ? Result<bool>.Ok(true)
                     : Result<bool>.Fail("Failed to delete document");
@@ -87,7 +89,7 @@ namespace TodoHub.Main.Core.Services
             try
             {
                 Log.Information("SearchDocuments starting in ESS");
-                var res = await ResilienceExecutor.WithTimeout(t => _repository.SearchDocumentsRepo(userId, query, t), TimeSpan.FromSeconds(2), ct);
+                var res = await _esBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _repository.SearchDocumentsRepo(userId, query, t), TimeSpan.FromSeconds(2), bct), ct);
                 return Result<List<TodoDTO>>.Ok(res ?? new List<TodoDTO>());
             }
             catch (Exception ex)

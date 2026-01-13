@@ -22,13 +22,14 @@ namespace TodoHub.Main.DataAccess.Repository
         }
 
         // Add User 
-        public async Task AddUserAsyncRepo(RegisterDTO user, CancellationToken ct)
+        public async Task<bool> AddUserAsyncRepo(RegisterDTO user, CancellationToken ct)
         {
             Log.Information("AddUserAsyncRepo starting in UserRepository");
             var entity = _mapper.Map<UserEntity>(user);
             entity.AuthProvider = "Local";
             await _context.Users.AddAsync(entity,ct);
             await _context.SaveChangesAsync(ct);
+            return true;
         }
 
         // Add Google User

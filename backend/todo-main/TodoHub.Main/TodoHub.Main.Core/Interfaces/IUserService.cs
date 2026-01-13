@@ -8,9 +8,8 @@ namespace TodoHub.Main.Core.Interfaces
 {
     public interface IUserService
     {
-        Task<List<UserDTO>> GetUsersAsync(CancellationToken ct);
-        Task<UserEntity?> GetUserByIdAsync(Guid id, CancellationToken ct);
-        Task<UserEntity?> GetUserByEmailAsync(string email, CancellationToken ct);
+        Task<Result<List<UserDTO>>> GetUsersAsync(CancellationToken ct);
+        Task<Result<UserEntity?>> GetUserByIdAsync(Guid id, CancellationToken ct);
         Task<Result<RegisterDTO>> AddUserAsync(RegisterDTO user, CancellationToken ct);
         Task<Result<Guid>> DeleteUserAsync(Guid id, CancellationToken ct);
         Task<(string token, Result<LoginResponseDTO>)> LoginUserAsync(LoginDTO user, CancellationToken ct);

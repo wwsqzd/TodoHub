@@ -54,6 +54,8 @@ namespace TodoHub.Main.API.Controllers
             if (userIdClaim is null)
                 return Unauthorized();
             var users = await _userService.GetUsersAsync(ct);
+            if (!users.Success)
+                return NotFound();
             return Ok(users);
         }
 
@@ -68,6 +70,8 @@ namespace TodoHub.Main.API.Controllers
                 return Unauthorized();
 
             var user = await _userService.GetUserByIdAsync(id, ct);
+            if (!user.Success)
+                return NotFound();
             return Ok(user);
         }
 

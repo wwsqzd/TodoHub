@@ -18,7 +18,7 @@ namespace TodoHub.Main.DataAccess.Repository
         }
 
         // add refresh token
-        public async Task AddRefreshTokenRepo(string refreshToken, Guid userId, CancellationToken ct)
+        public async Task<bool> AddRefreshTokenRepo(string refreshToken, Guid userId, CancellationToken ct)
         {
             Log.Information("AddRefreshTokenRepo starting in RTR");
             var entity = new RefreshTokenEntity
@@ -28,10 +28,11 @@ namespace TodoHub.Main.DataAccess.Repository
             };
             await _context.RefreshTokens.AddAsync(entity, ct);
             await _context.SaveChangesAsync(ct);
+            return true;
         }
 
         // delete old tokens
-        public async Task DeleteOldTokensRepo(CancellationToken ct)
+        public async Task<bool> DeleteOldTokensRepo(CancellationToken ct)
         {
             Log.Information("DeleteOldTokenRepo starting in RTR");
 
@@ -40,6 +41,7 @@ namespace TodoHub.Main.DataAccess.Repository
             _context.RemoveRange(oldTokens);
             await _context.SaveChangesAsync(ct);
             Log.Information("Old tokens deleted");
+            return true;
         }
 
         // get token
@@ -61,7 +63,7 @@ namespace TodoHub.Main.DataAccess.Repository
         }
 
         // refresh old token
-        public async Task RefreshTokenRepo(string refreshToken, string newToken, Guid userId, CancellationToken ct)
+        public async Task<bool> RefreshTokenRepo(string refreshToken, string newToken, Guid userId, CancellationToken ct)
         {
             Log.Information("RefreshTokenRepo starting in RTR");
 
@@ -69,7 +71,7 @@ namespace TodoHub.Main.DataAccess.Repository
             var token = await _context.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash.Equals(refreshToken), ct);
             if (token == null)
             {
-                return;
+                return false;
             }
             while (token!.ReplacedByToken != null)
             {
@@ -86,20 +88,22 @@ namespace TodoHub.Main.DataAccess.Repository
             };
             await _context.RefreshTokens.AddAsync(entity, ct);
             await _context.SaveChangesAsync(ct);
+            return true;
         }
 
         // revoke token
-        public async Task RevokeRefreshTokenRepo(string refreshToken, CancellationToken ct)
+        public async Task<bool> RevokeRefreshTokenRepo(string refreshToken, CancellationToken ct)
         {
             Log.Information("RevokeRefreshTokenRepo starting in RTR");
 
             var res = await _context.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == refreshToken, ct);
             if (res == null)
             {
-                return;
+                return false;
             }
             res.Revoked = DateTime.UtcNow;
             await _context.SaveChangesAsync(ct);
+            return true;
         }
 
         // delete refresh tokens by user

@@ -19,14 +19,6 @@ export default function Home() {
     <div className={font.className}>
       <div className="w-[100vw] min-h-[100vh] h-fit flex justify-start items-center flex-col bg-gray-50">
         <StartPart />
-        <p className="text-2xl font-bold">
-          Short documentation on implementation:
-        </p>
-        <DynamicBackEndPart />
-
-        {/* <div className="w-[1000px]">
-          <p className="text-3xl">Front-End</p>
-        </div> */}
       </div>
     </div>
   );

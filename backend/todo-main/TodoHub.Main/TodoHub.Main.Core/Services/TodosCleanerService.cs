@@ -6,15 +6,16 @@ namespace TodoHub.Main.Core.Services
     public class TodosCleanerService : ITodosCleanerService
     {
         private readonly ITodoRepository _repository;
+        private readonly DbBulkhead _dbBulkhead;
 
-
-        public TodosCleanerService(ITodoRepository repository)
+        public TodosCleanerService(ITodoRepository repository, DbBulkhead dbBulkhead)
         {
             _repository = repository;
+            _dbBulkhead = dbBulkhead;
         }
         public async Task CleanALlTodosByUser(Guid ownerId, CancellationToken ct)
         {
-            await ResilienceExecutor.WithTimeout(t => _repository.DeleteAllTodoByUserAsyncRepo(ownerId, t), TimeSpan.FromSeconds(5), ct);
+            await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _repository.DeleteAllTodoByUserAsyncRepo(ownerId, t), TimeSpan.FromSeconds(5), bct), ct);
         }
     }
 }
