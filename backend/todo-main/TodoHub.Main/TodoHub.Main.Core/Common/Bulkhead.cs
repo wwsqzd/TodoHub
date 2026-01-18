@@ -1,4 +1,4 @@
-﻿
+﻿using TodoHub.Main.Core.Interfaces;
 
 namespace TodoHub.Main.Core.Common
 {
@@ -7,7 +7,7 @@ namespace TodoHub.Main.Core.Common
         public BulkheadRejektedException(string name) : base($"Bulkhead '{name}' rejekted request") { }
     }
 
-    public class Bulkhead
+    public class Bulkhead : IBulkhead
     {
         private readonly SemaphoreSlim _sem;
         public string Name { get; }
