@@ -264,6 +264,7 @@ export const ChangeUserlanguage = async (language: string) => {
 export const getUserTodos = async (params: URLSearchParams) => {
   try {
     const res = await api.get(`${API_URL}/todos?${params.toString()}`, { withCredentials: true });
+    console.log(res);
     return res.data;
   } catch (err: unknown) {
     if (axios.isAxiosError(err) && err.response?.status === 504) {

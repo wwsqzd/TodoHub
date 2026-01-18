@@ -53,8 +53,8 @@ namespace TodoHub.Main.Core.Services
 
             try
             {
-                var createdTodo = await _dbBulkhead.ExecuteAsync(bulkCt => ResilienceExecutor.WithTimeout(t => _todoRepository.AddTodoAsyncRepo(todo, OwnerId, t),TimeSpan.FromSeconds(5),bulkCt),ct);
-                var elastik_response = await _esBulkhead.ExecuteAsync(bulkCt => ResilienceExecutor.WithTimeout(t => _elastikSearchService.UpsertDoc(createdTodo, createdTodo.Id, t), TimeSpan.FromSeconds(5), bulkCt),ct);
+                var createdTodo = await _dbBulkhead.ExecuteAsync(bulkCt => ResilienceExecutor.WithTimeout(t => _todoRepository.AddTodoAsyncRepo(todo, OwnerId, t), TimeSpan.FromSeconds(5), bulkCt), ct);
+                var elastik_response = await _esBulkhead.ExecuteAsync(bulkCt => ResilienceExecutor.WithTimeout(t => _elastikSearchService.UpsertDoc(createdTodo, createdTodo.Id, t), TimeSpan.FromSeconds(5), bulkCt), ct);
 
                 if (!elastik_response.Success)
                 {
@@ -62,9 +62,14 @@ namespace TodoHub.Main.Core.Services
                 }
                 await _todoCacheService.DeleteCache(OwnerId);
                 return Result<TodoDTO>.Ok(createdTodo);
-            } catch (BulkheadRejektedException ex)
+            }
+            catch (BulkheadRejektedException ex)
             {
                 return Result<TodoDTO>.Fail($"Overloaded: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                return Result<TodoDTO>.Fail($"Exception: {ex.Message}");
             }
         }
 
@@ -78,12 +83,20 @@ namespace TodoHub.Main.Core.Services
                 {
                     return Result<Guid>.Fail("Error deleting todo");
                 }
-                await _esBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _elastikSearchService.DeleteDoc(id, OwnerId, t), TimeSpan.FromSeconds(5), bct), ct);
+                var elastik_response = await _esBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _elastikSearchService.DeleteDoc(id, OwnerId, t), TimeSpan.FromSeconds(5), bct), ct);
+                if (!elastik_response.Success)
+                {
+                    return Result<Guid>.Fail($"Exception: {elastik_response.Message}");
+                }
                 await _todoCacheService.DeleteCache(OwnerId);
                 return Result<Guid>.Ok(res.Value);
             } catch (BulkheadRejektedException ex)
             {
                 return Result<Guid>.Fail($"Overloaded: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                return Result<Guid>.Fail($"Exception: {ex.Message}");
             }
         }
 
@@ -102,15 +115,20 @@ namespace TodoHub.Main.Core.Services
             {
                 return Result<TodoDTO>.Fail($"Overloaded: {ex.Message}");
             }
+            catch (Exception ex)
+            {
+                return Result<TodoDTO>.Fail($"Exception: {ex.Message}");
+            }
         }
 
+        // FIX!!!!
         // get todos
         public async Task<Result<List<TodoDTO>>> GetTodosAsync(Guid UserId, DateTime? lastCreated, Guid? lastId, CancellationToken ct)
         {
             try
             {
                 var todos_redis = await _todoCacheService.GetTodosAsync(UserId, lastCreated, lastId);
-                if (todos_redis.Any() == true)
+                if (todos_redis.Count != 0)
                 {
                     return Result<List<TodoDTO>>.Ok(todos_redis, "Todos from redis");
                 }
@@ -126,7 +144,14 @@ namespace TodoHub.Main.Core.Services
             {
                 return Result<List<TodoDTO>>.Fail($"Overloaded: {ex.Message}");
             }
+            catch (Exception ex)
+            {
+                return Result<List<TodoDTO>>.Fail($"Exception: {ex.Message}");
+            }
         }
+
+
+
         // update todo
         public async Task<Result<TodoDTO>> UpdateTodoAsync(UpdateTodoDTO todo, Guid OwnerId, Guid TodoId, CancellationToken ct)
         {
@@ -144,6 +169,10 @@ namespace TodoHub.Main.Core.Services
             } catch (BulkheadRejektedException ex)
             {
                 return Result<TodoDTO>.Fail($"Overloaded: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                return Result<TodoDTO>.Fail($"Exception: {ex.Message}");
             }
         }
     }
