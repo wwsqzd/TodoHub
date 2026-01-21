@@ -70,30 +70,30 @@ namespace TodoHub.Main.DataAccess.Repository
         }
 
         // Get todo by userID and page
-        public async Task<List<TodoDTO>> GetTodosByPageAsyncRepo(Guid UserId, DateTime? lastCreated, Guid? lastId, CancellationToken ct)
-        {
-            Log.Information("GetTodosByPageAsyncRepo starting in TodoRepository");
+        //public async Task<List<TodoDTO>> GetTodosByPageAsyncRepo(Guid UserId, DateTime? lastCreated, Guid? lastId, CancellationToken ct)
+        //{
+        //    Log.Information("GetTodosByPageAsyncRepo starting in TodoRepository");
 
-            var query = _context.Todos
-                .Where(t => t.OwnerId == UserId);
+        //    var query = _context.Todos
+        //        .Where(t => t.OwnerId == UserId);
 
-            if (lastCreated != null && lastId != null)
-            {
-                query = query.Where(t =>
-                    t.CreatedDate < lastCreated.Value ||
-                    (t.CreatedDate == lastCreated.Value && t.Id.CompareTo(lastId.Value) < 0));
-            }
+        //    if (lastCreated != null && lastId != null)
+        //    {
+        //        query = query.Where(t =>
+        //            t.CreatedDate < lastCreated.Value ||
+        //            (t.CreatedDate == lastCreated.Value && t.Id.CompareTo(lastId.Value) < 0));
+        //    }
 
-            query = query.OrderBy(t => t.IsCompleted)
-                         .ThenByDescending(t => t.CreatedDate)
-                         .ThenByDescending(t => t.Id);
+        //    query = query.OrderBy(t => t.IsCompleted)
+        //                 .ThenByDescending(t => t.CreatedDate)
+        //                 .ThenByDescending(t => t.Id);
 
             
-            var todos = await query.Take(10).ToListAsync(ct);
+        //    var todos = await query.Take(10).ToListAsync(ct);
 
-            var todoDTOs = _mapper.Map<List<TodoDTO>>(todos);
-            return todoDTOs;
-        }
+        //    var todoDTOs = _mapper.Map<List<TodoDTO>>(todos);
+        //    return todoDTOs;
+        //}
 
         // Get Todos
         public async Task<List<TodoDTO>> GetTodosAsyncRepo(Guid UserId, CancellationToken ct)

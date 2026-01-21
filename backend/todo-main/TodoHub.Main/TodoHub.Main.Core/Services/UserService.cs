@@ -12,12 +12,12 @@ namespace TodoHub.Main.Core.Services
 {
     public class UserService : IUserService
     {
-        private readonly IPasswordService _passwordService;
-        private readonly IJwtService _jwtService;
-        private readonly IUserRepository _userRepository;
+        private readonly IPasswordService password_serv;
+        private readonly IJwtService jwt_serv;
+        private readonly IUserRepository user_repo;
         private readonly AbstractValidator<RegisterDTO> _register_validator;
         private readonly AbstractValidator<LoginDTO> _login_validator;
-        private readonly IRefreshTokenRepository _refreshTokenRepository;
+        private readonly IRefreshTokenRepository tokens_repo;
         private readonly AbstractValidator<ChangeLanguageDTO> _language_validator;
         private readonly DbBulkhead _dbBulkhead;
 
@@ -32,12 +32,12 @@ namespace TodoHub.Main.Core.Services
             DbBulkhead dbBulkhead
             )
         {
-            _passwordService = passwordService;
-            _jwtService = jwtService;
-            _userRepository = userRepository;
+            password_serv = passwordService;
+            jwt_serv = jwtService;
+            user_repo = userRepository;
             _register_validator = register_validator;
             _login_validator = login_validator;
-            _refreshTokenRepository = refreshTokenRepository;
+            tokens_repo = refreshTokenRepository;
             _language_validator = language_validator;
             _dbBulkhead = dbBulkhead;
         }
@@ -52,7 +52,7 @@ namespace TodoHub.Main.Core.Services
                 {
                     return Result<RegisterDTO>.Fail("Incorrect data entry");
                 }
-                if (await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByEmailAsyncRepo(user.Email, t), TimeSpan.FromSeconds(5), bct), ct) != null)
+                if (await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => user_repo.GetUserByEmailAsyncRepo(user.Email, t), TimeSpan.FromSeconds(5), bct), ct) != null)
                 {
                     return Result<RegisterDTO>.Fail("This user already exists");
                 }
@@ -62,15 +62,18 @@ namespace TodoHub.Main.Core.Services
                     return Result<RegisterDTO>.Fail("The password is too weak.");
                 }
 
-                user.Password = _passwordService.HashPassword(user.Password);
-            
-                await ResilienceExecutor.WithTimeout(t =>  _userRepository.AddUserAsyncRepo(user, t), TimeSpan.FromSeconds(5), ct);
-                await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _userRepository.AddUserAsyncRepo(user, t), TimeSpan.FromSeconds(5), bct), ct);
+                user.Password = password_serv.HashPassword(user.Password);
+
+                await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => user_repo.AddUserAsyncRepo(user, t), TimeSpan.FromSeconds(5), bct), ct);
 
                 return Result<RegisterDTO>.Ok(user);
-            } catch (BulkheadRejektedException ex)
+            }
+            catch (BulkheadRejektedException ex)
             {
                 return Result<RegisterDTO>.Fail($"Overloaded: {ex.Message}");
+            }
+            catch (Exception ex) {
+                return Result<RegisterDTO>.Fail($"Exception: {ex.Message}");
             }
             
         }
@@ -88,24 +91,24 @@ namespace TodoHub.Main.Core.Services
                 }
 
                 // search user with email
-                var user = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByEmailAsyncRepo(login_user.Email, t), TimeSpan.FromSeconds(5), bct), ct);
+                var user = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => user_repo.GetUserByEmailAsyncRepo(login_user.Email, t), TimeSpan.FromSeconds(5), bct), ct);
 
                 // if the password is zero or not equal, we throw an error
                 if (user == null)
                     return (string.Empty, Result<LoginResponseDTO>.Fail("Invalid email or password"));
-                bool isPasswordValid = _passwordService.VerifyPassword(user.Password, login_user.Password);
+                bool isPasswordValid = password_serv.VerifyPassword(user.Password, login_user.Password);
 
                 if (!isPasswordValid)
                     return (string.Empty, Result<LoginResponseDTO>.Fail("Invalid password"));
 
 
 
-                var token = _jwtService.getJwtToken(user);
+                var token = jwt_serv.getJwtToken(user);
             
 
-                var refreshtoken = await _passwordService.AddRefreshToken(user.Id, ct);
+                string refreshtoken = await password_serv.AddRefreshToken(user.Id, ct);
 
-                if (refreshtoken == null)
+                if (string.IsNullOrEmpty(refreshtoken))
                 {
                     return (string.Empty, Result<LoginResponseDTO>.Fail("Refresh Token is invalid"));
                 }
@@ -122,6 +125,10 @@ namespace TodoHub.Main.Core.Services
             {
                 return (string.Empty, Result<LoginResponseDTO>.Fail($"Overloaded: {ex.Message}"));
             }
+            catch (Exception ex)
+            {
+                return (string.Empty, Result<LoginResponseDTO>.Fail($"Exception: {ex.Message}"));
+            }
         }
 
         // refresh token 
@@ -130,7 +137,7 @@ namespace TodoHub.Main.Core.Services
             try
             {
                 // validation
-                var isValid = await _passwordService.isRefreshTokenValid(old_refresh_token, ct);
+                var isValid = await password_serv.isRefreshTokenValid(old_refresh_token, ct);
                 if (!isValid)
                 {
                     return (string.Empty, Result<LoginResponseDTO>.Fail("Refresh token is Invalid"));
@@ -138,23 +145,23 @@ namespace TodoHub.Main.Core.Services
 
 
                 // user id in token
-                var userIdInToken = await _passwordService.GetUserId(old_refresh_token, ct);
+                var userIdInToken = await password_serv.GetUserId(old_refresh_token, ct);
                 if (userIdInToken == null)
                 {
                     return (string.Empty, Result<LoginResponseDTO>.Fail("UserID not found in token"));
                 }
                 // find user
-                var user = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByIdAsyncRepo(userIdInToken.Value, t), TimeSpan.FromSeconds(2), bct), ct);
+                var user = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => user_repo.GetUserByIdAsyncRepo(userIdInToken.Value, t), TimeSpan.FromSeconds(2), bct), ct);
                 if (user == null)
                 {
                     return (string.Empty, Result<LoginResponseDTO>.Fail("The user with this ID was not found."));
                 }
                 // JWT Token
-                var jwt = _jwtService.getJwtToken(user);
+                var jwt = jwt_serv.getJwtToken(user);
                 var token = new JwtSecurityTokenHandler().WriteToken(jwt);
 
                 // Refresh Token
-                var newRefreshtoken = await _passwordService.RefreshToken(old_refresh_token, userIdInToken.Value, ct);
+                var newRefreshtoken = await password_serv.RefreshToken(old_refresh_token, userIdInToken.Value, ct);
                 if (newRefreshtoken == null)
                 {
                     return (string.Empty, Result<LoginResponseDTO>.Fail("Refresh Token is Invalid"));
@@ -173,6 +180,10 @@ namespace TodoHub.Main.Core.Services
             {
                 return (string.Empty, Result<LoginResponseDTO>.Fail($"Overloaded: {ex.Message}"));
             }
+            catch (Exception ex)
+            {
+                return (string.Empty, Result<LoginResponseDTO>.Fail($"Exception: {ex.Message}"));
+            }
         }
         
 
@@ -181,14 +192,18 @@ namespace TodoHub.Main.Core.Services
         {
             try
             {
-                var res = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _userRepository.GetUsersAsyncRepo(t), TimeSpan.FromSeconds(5), bct), ct);
+                var res = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => user_repo.GetUsersAsyncRepo(t), TimeSpan.FromSeconds(5), bct), ct);
                 return Result<List<UserDTO>>.Ok(res);
             }
             catch (BulkheadRejektedException ex)
             {
                 return Result<List<UserDTO>>.Fail($"Overloaded: {ex.Message}");
             }
-            
+            catch (Exception ex)
+            {
+                return Result<List<UserDTO>>.Fail($"Exception: {ex.Message}");
+            }
+
         }
 
         // seach with id
@@ -196,12 +211,16 @@ namespace TodoHub.Main.Core.Services
         {
             try
             {
-                var res = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByIdAsyncRepo(id, t), TimeSpan.FromSeconds(5), bct), ct);
+                var res = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => user_repo.GetUserByIdAsyncRepo(id, t), TimeSpan.FromSeconds(5), bct), ct);
                 return Result<UserEntity?>.Ok(res);
             }
             catch (BulkheadRejektedException ex)
             {
                 return Result<UserEntity?>.Fail($"Overloaded: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                return Result<UserEntity?>.Fail($"Exception: {ex.Message}");
             }
         }
 
@@ -211,19 +230,23 @@ namespace TodoHub.Main.Core.Services
         {
             try
             {
-                var user = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByIdAsyncRepo(id, t), TimeSpan.FromSeconds(5), bct), ct);
+                var user = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => user_repo.GetUserByIdAsyncRepo(id, t), TimeSpan.FromSeconds(5), bct), ct);
 
                 if (user == null)
                 {
                     return Result<Guid>.Fail("User does not exist");
                 }
-                await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _userRepository.DeleteUserAsyncRepo(id, t), TimeSpan.FromSeconds(5), bct), ct);
-                await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _refreshTokenRepository.DeleteRefreshTokensByUserRepo(id, t), TimeSpan.FromSeconds(5), bct), ct);
+                await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => user_repo.DeleteUserAsyncRepo(id, t), TimeSpan.FromSeconds(5), bct), ct);
+                await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => tokens_repo.DeleteRefreshTokensByUserRepo(id, t), TimeSpan.FromSeconds(5), bct), ct);
                 return Result<Guid>.Ok(id);
             }
             catch (BulkheadRejektedException ex)
             {
                 return Result<Guid>.Fail($"Overloaded: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                return Result<Guid>.Fail($"Exception: {ex.Message}");
             }
         }
 
@@ -232,7 +255,7 @@ namespace TodoHub.Main.Core.Services
         {
             try
             {
-                var user = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _userRepository.GetMeRepo(userId, t), TimeSpan.FromSeconds(5), bct), ct);
+                var user = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => user_repo.GetMeRepo(userId, t), TimeSpan.FromSeconds(5), bct), ct);
                 if (user == null)
                 {
                     return Result<UserDTO>.Fail("User does not exist");
@@ -243,6 +266,10 @@ namespace TodoHub.Main.Core.Services
             {
                 return Result<UserDTO>.Fail($"Overloaded: {ex.Message}");
             }
+            catch (Exception ex)
+            {
+                return Result<UserDTO>.Fail($"Exception: {ex.Message}");
+            }
         }
 
         // logout
@@ -250,12 +277,16 @@ namespace TodoHub.Main.Core.Services
         {
             try
             {
-                await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _passwordService.RevokeRefreshToken(refresh_token, t), TimeSpan.FromSeconds(3), bct), ct);
+                await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => password_serv.RevokeRefreshToken(refresh_token, t), TimeSpan.FromSeconds(3), bct), ct);
                 return Result<bool>.Ok(true);
             }
             catch (BulkheadRejektedException ex)
             {
                 return Result<bool>.Fail($"Overloaded: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                return Result<bool>.Fail($"Exception: {ex.Message}");
             }
         }
 
@@ -264,12 +295,16 @@ namespace TodoHub.Main.Core.Services
         {
             try
             {
-                bool res = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _userRepository.IsUserAdminRepo(id, t), TimeSpan.FromSeconds(5), bct), ct);
+                bool res = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => user_repo.IsUserAdminRepo(id, t), TimeSpan.FromSeconds(5), bct), ct);
                 return Result<bool>.Ok(res);
             }
             catch (BulkheadRejektedException ex)
             {
                 return Result<bool>.Fail($"Overloaded: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                return Result<bool>.Fail($"Exception: {ex.Message}");
             }
         }
 
@@ -282,12 +317,16 @@ namespace TodoHub.Main.Core.Services
                 {
                     return Result<bool>.Fail("Incorrect Data Entry");
                 }
-                var res = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _userRepository.ChangeUserLanguageRepo(language_dto.Language, user_id, t), TimeSpan.FromSeconds(5), bct), ct);
+                var res = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => user_repo.ChangeUserLanguageRepo(language_dto.Language, user_id, t), TimeSpan.FromSeconds(5), bct), ct);
                 return Result<bool>.Ok(res);
             }
             catch (BulkheadRejektedException ex)
             {
                 return Result<bool>.Fail($"Overloaded: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                return Result<bool>.Fail($"Exception: {ex.Message}");
             }
         }
     }

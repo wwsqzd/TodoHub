@@ -8,14 +8,14 @@ namespace TodoHub.Main.Core.Common
             TimeSpan timeout,
             CancellationToken ct)
         {
-            using var timeoutCts = new CancellationTokenSource(timeout);
-            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
+            using var timeoutcts = new CancellationTokenSource(timeout);
+            using var linkedcts = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutcts.Token);
 
             try
             {
-                return await action(linkedCts.Token);
+                return await action(linkedcts.Token);
             }
-            catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
+            catch (OperationCanceledException) when (timeoutcts.IsCancellationRequested)
             {
                 throw new TimeoutException($"Operation timed out after {timeout.TotalSeconds}s");
             }
@@ -26,14 +26,14 @@ namespace TodoHub.Main.Core.Common
             TimeSpan timeout,
             CancellationToken ct)
         {
-            using var timeoutCts = new CancellationTokenSource(timeout);
-            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
+            using var timeoutcts = new CancellationTokenSource(timeout);
+            using var linkedcts = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutcts.Token);
 
             try
             {
-                await action(linkedCts.Token);
+                await action(linkedcts.Token);
             }
-            catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
+            catch (OperationCanceledException) when (timeoutcts.IsCancellationRequested)
             {
                 throw new TimeoutException($"Operation timed out after {timeout.TotalSeconds}s");
             }

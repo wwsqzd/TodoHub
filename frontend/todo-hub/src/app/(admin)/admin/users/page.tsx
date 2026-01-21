@@ -13,7 +13,7 @@ export default function AdminPage() {
   useEffect(() => {
     const getUsers = async () => {
       const res = await GetUsers();
-      SetUsersData(res);
+      SetUsersData(res.value);
     };
     getUsers();
   }, []);

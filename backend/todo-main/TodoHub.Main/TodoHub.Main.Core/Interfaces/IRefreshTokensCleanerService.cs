@@ -1,7 +1,9 @@
-﻿namespace TodoHub.Main.Core.Interfaces
+﻿using TodoHub.Main.Core.Common;
+
+namespace TodoHub.Main.Core.Interfaces
 {
     public interface IRefreshTokensCleanerService
     {
-        Task CleanAllRefreshTokens(CancellationToken ct);
+        Task<Result<bool>> CleanAllRefreshTokens(CancellationToken ct);
     }
 }

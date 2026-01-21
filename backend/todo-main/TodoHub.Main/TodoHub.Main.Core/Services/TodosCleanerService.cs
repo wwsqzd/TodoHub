@@ -13,9 +13,17 @@ namespace TodoHub.Main.Core.Services
             _repository = repository;
             _dbBulkhead = dbBulkhead;
         }
-        public async Task CleanALlTodosByUser(Guid ownerId, CancellationToken ct)
+        public async Task<Result<bool>> CleanALlTodosByUser(Guid ownerId, CancellationToken ct)
         {
-            await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _repository.DeleteAllTodoByUserAsyncRepo(ownerId, t), TimeSpan.FromSeconds(5), bct), ct);
+            try
+            {
+                var response = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _repository.DeleteAllTodoByUserAsyncRepo(ownerId, t), TimeSpan.FromSeconds(5), bct), ct);
+                return Result<bool>.Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return Result<bool>.Fail(ex.Message);
+            } 
         }
     }
 }

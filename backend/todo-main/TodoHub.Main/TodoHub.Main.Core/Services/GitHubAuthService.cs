@@ -12,9 +12,9 @@ namespace TodoHub.Main.Core.Services
     public class GitHubAuthService : IGitHubAuthService
     {
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IPasswordService _passwordService;
-        private readonly IJwtService _jwtService;
-        private readonly IUserRepository _userRepository;
+        private readonly IPasswordService password_serv;
+        private readonly IJwtService jwt_serv;
+        private readonly IUserRepository user_repo;
         private readonly DbBulkhead _dbBulkhead;
 
         public GitHubAuthService(
@@ -26,9 +26,9 @@ namespace TodoHub.Main.Core.Services
             )
         {
             _httpClientFactory = httpClientFactory;
-            _passwordService = passwordService;
-            _jwtService = jwtService;
-            _userRepository = userRepository;
+            password_serv = passwordService;
+            jwt_serv = jwtService;
+            user_repo = userRepository;
             _dbBulkhead = dbBulkhead;
         }
 
@@ -145,12 +145,12 @@ namespace TodoHub.Main.Core.Services
             }
 
             
-            var userFromDb = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByEmailAsyncRepo(userInfo.Email, t), TimeSpan.FromSeconds(5), bct), ct);
+            var userFromDb = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => user_repo.GetUserByEmailAsyncRepo(userInfo.Email, t), TimeSpan.FromSeconds(5), bct), ct);
 
             if (userFromDb == null)
             {
-                await ResilienceExecutor.WithTimeout(t => _userRepository.AddGitHubUserAsyncRepo(userInfo, t), TimeSpan.FromSeconds(5), ct);
-                userFromDb = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByEmailAsyncRepo(userInfo.Email, t), TimeSpan.FromSeconds(5), bct), ct);
+                await ResilienceExecutor.WithTimeout(t => user_repo.AddGitHubUserAsyncRepo(userInfo, t), TimeSpan.FromSeconds(5), ct);
+                userFromDb = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => user_repo.GetUserByEmailAsyncRepo(userInfo.Email, t), TimeSpan.FromSeconds(5), bct), ct);
             }
 
 
@@ -167,7 +167,7 @@ namespace TodoHub.Main.Core.Services
 
         private LoginResponseDTO? GenerateAccessToken(UserEntity user)
         {
-            var token = _jwtService.getJwtToken(user);
+            var token = jwt_serv.getJwtToken(user);
             return new LoginResponseDTO
             {
                 Token = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().WriteToken(token),
@@ -177,7 +177,7 @@ namespace TodoHub.Main.Core.Services
 
         private async Task<string?> GenerateRefreshToken(UserEntity user, CancellationToken ct)
         {
-            return await _passwordService.AddRefreshToken(user.Id, ct);
+            return await password_serv.AddRefreshToken(user.Id, ct);
         }
     }
 }

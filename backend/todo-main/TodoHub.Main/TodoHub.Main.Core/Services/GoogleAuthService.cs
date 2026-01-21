@@ -12,17 +12,17 @@ namespace TodoHub.Main.Core.Services
     public class GoogleAuthService : IGoogleAuthService
     {
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IPasswordService _passwordService;
-        private readonly IJwtService _jwtService;
-        private readonly IUserRepository _userRepository;
+        private readonly IPasswordService password_serv;
+        private readonly IJwtService jwt_serv;
+        private readonly IUserRepository user_repo;
         private readonly DbBulkhead _dbBulkhead;
 
         public GoogleAuthService(IHttpClientFactory httpClientFactory, IPasswordService passwordService, IJwtService jwtService, IUserRepository userRepository, DbBulkhead dbBulkhead)
         {
             _httpClientFactory = httpClientFactory;
-            _passwordService = passwordService;
-            _jwtService = jwtService;
-            _userRepository = userRepository;
+            password_serv = passwordService;
+            jwt_serv = jwtService;
+            user_repo = userRepository;
             _dbBulkhead = dbBulkhead;
         }
 
@@ -81,12 +81,12 @@ namespace TodoHub.Main.Core.Services
             var idToken = payload.GetProperty("id_token").GetString();
             var userInfo = ParseIdToken(idToken);
 
-            var user_from_db = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByEmailAsyncRepo(userInfo.Email, t), TimeSpan.FromSeconds(5), bct), ct);
+            var user_from_db = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => user_repo.GetUserByEmailAsyncRepo(userInfo.Email, t), TimeSpan.FromSeconds(5), bct), ct);
 
             if (user_from_db  == null)
             {
-                await ResilienceExecutor.WithTimeout(t => _userRepository.AddGoogleUserAsyncRepo(userInfo, t), TimeSpan.FromSeconds(5), ct);
-                await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _userRepository.GetUserByEmailAsyncRepo(userInfo.Email, t), TimeSpan.FromSeconds(5), bct), ct);
+                await ResilienceExecutor.WithTimeout(t => user_repo.AddGoogleUserAsyncRepo(userInfo, t), TimeSpan.FromSeconds(5), ct);
+                await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => user_repo.GetUserByEmailAsyncRepo(userInfo.Email, t), TimeSpan.FromSeconds(5), bct), ct);
             }
 
             if (user_from_db.GoogleId == null)
@@ -133,7 +133,7 @@ namespace TodoHub.Main.Core.Services
 
         private LoginResponseDTO? GenerateAccessToken(UserEntity user)
         {
-            var token = _jwtService.getJwtToken(user);
+            var token = jwt_serv.getJwtToken(user);
             var response = new LoginResponseDTO
             {
                 Token = new JwtSecurityTokenHandler().WriteToken(token),
@@ -144,7 +144,7 @@ namespace TodoHub.Main.Core.Services
 
         private async Task<string?> GenerateRefreshToken(UserEntity user, CancellationToken ct) 
         {
-            return await _passwordService.AddRefreshToken(user.Id, ct);
+            return await password_serv.AddRefreshToken(user.Id, ct);
         }
     }
 }
