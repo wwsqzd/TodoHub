@@ -13,7 +13,7 @@ namespace TodoHub.Main.Core.Interfaces
         Task<bool> DeleteAllTodoByUserAsyncRepo(Guid OwnerId, CancellationToken ct);
         Task<TodoDTO?> GetTodoByIdAsyncRepo(Guid id, Guid OwnerId, CancellationToken ct);
         Task<TodoDTO> UpdateTodoAsyncRepo(UpdateTodoDTO todo, Guid OwnerId, Guid TodoId, CancellationToken ct);
-        Task<List<TodoDTO>> GetTodosByPageAsyncRepo(Guid UserId, DateTime? lastCreated, Guid? lastId, CancellationToken ct);
+        //Task<List<TodoDTO>> GetTodosByPageAsyncRepo(Guid UserId, DateTime? lastCreated, Guid? lastId, CancellationToken ct);
         Task<List<TodoDTO>> GetTodosAsyncRepo(Guid UserId, CancellationToken ct);
 
     }

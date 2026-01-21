@@ -53,8 +53,8 @@ namespace TodoHub.Main.Core.Services
 
             try
             {
-                var createdTodo = await _dbBulkhead.ExecuteAsync(bulkCt => ResilienceExecutor.WithTimeout(t => _todoRepository.AddTodoAsyncRepo(todo, OwnerId, t), TimeSpan.FromSeconds(5), bulkCt), ct);
-                var elastik_response = await _esBulkhead.ExecuteAsync(bulkCt => ResilienceExecutor.WithTimeout(t => _elastikSearchService.UpsertDoc(createdTodo, createdTodo.Id, t), TimeSpan.FromSeconds(5), bulkCt), ct);
+                var createdTodo = await _dbBulkhead.ExecuteAsync(bulkct => ResilienceExecutor.WithTimeout(t => _todoRepository.AddTodoAsyncRepo(todo, OwnerId, t), TimeSpan.FromSeconds(5), bulkct), ct);
+                var elastik_response = await _esBulkhead.ExecuteAsync(bulkct => ResilienceExecutor.WithTimeout(t => _elastikSearchService.UpsertDoc(createdTodo, createdTodo.Id, t), TimeSpan.FromSeconds(5), bulkct), ct);
 
                 if (!elastik_response.Success)
                 {
@@ -121,25 +121,19 @@ namespace TodoHub.Main.Core.Services
             }
         }
 
-        // FIX!!!!
         // get todos
-        public async Task<Result<List<TodoDTO>>> GetTodosAsync(Guid UserId, DateTime? lastCreated, Guid? lastId, CancellationToken ct)
+        public async Task<Result<List<TodoDTO>>> GetTodosAsync(Guid UserId, CancellationToken ct)
         {
             try
             {
-                var todos_redis = await _todoCacheService.GetTodosAsync(UserId, lastCreated, lastId);
+                var todos_redis = await _todoCacheService.GetTodosAsync(UserId);
                 if (todos_redis.Count != 0)
                 {
                     return Result<List<TodoDTO>>.Ok(todos_redis, "Todos from redis");
                 }
-                var todosPage = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _todoRepository.GetTodosByPageAsyncRepo(UserId, lastCreated, lastId, t), TimeSpan.FromSeconds(2), bct), ct);
-                if (todosPage == null)
-                {
-                    return Result<List<TodoDTO>>.Fail("Todos is empty in Database");
-                }
                 var todos = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _todoRepository.GetTodosAsyncRepo(UserId, t), TimeSpan.FromSeconds(2), bct), ct);
                 await _todoCacheService.SetTodosAsync(todos, UserId);
-                return Result<List<TodoDTO>>.Ok(todosPage, "Todos from db");
+                return Result<List<TodoDTO>>.Ok(todos, "Todos from db");
             } catch (BulkheadRejektedException ex)
             {
                 return Result<List<TodoDTO>>.Fail($"Overloaded: {ex.Message}");

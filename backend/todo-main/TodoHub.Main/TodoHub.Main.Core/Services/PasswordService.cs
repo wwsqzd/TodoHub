@@ -12,12 +12,12 @@ namespace TodoHub.Main.Core.Services
     public class PasswordService : IPasswordService
     {
         private readonly PasswordHasher<string> _hasher = new();
-        private readonly IRefreshTokenRepository _refreshTokenRepository;
+        private readonly IRefreshTokenRepository tokens_repo;
         private readonly DbBulkhead _dbBulkhead;
 
         public PasswordService(IRefreshTokenRepository refreshTokenRepository, DbBulkhead dbBulkhead) 
         {
-            _refreshTokenRepository = refreshTokenRepository;
+            tokens_repo = refreshTokenRepository;
             _dbBulkhead = dbBulkhead;
         }
 
@@ -36,10 +36,9 @@ namespace TodoHub.Main.Core.Services
 
         public async Task<string> AddRefreshToken(Guid UserId, CancellationToken ct)
         {
-            // Ich gebe dem Benutzer den normalen Token zurück und speichere den Hash in der Datenbank.
             var token = GenerateRefreshToken();
             var hash_token = HashToken(token);
-            await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _refreshTokenRepository.AddRefreshTokenRepo(hash_token, UserId, t), TimeSpan.FromSeconds(2), bct), ct);
+            await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => tokens_repo.AddRefreshTokenRepo(hash_token, UserId, t), TimeSpan.FromSeconds(2), bct), ct);
             return token;
         }
 
@@ -47,7 +46,7 @@ namespace TodoHub.Main.Core.Services
         {
             var oldHash = HashToken(old_refresh_token);
 
-            var oldToken = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _refreshTokenRepository.GetTokenRepo(oldHash, t), TimeSpan.FromSeconds(2), bct), ct);
+            var oldToken = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => tokens_repo.GetTokenRepo(oldHash, t), TimeSpan.FromSeconds(2), bct), ct);
             if (oldToken == null)
             {
                 Log.Error("Old token is Invalid (in RefreshToken // PasswordService)");
@@ -57,7 +56,7 @@ namespace TodoHub.Main.Core.Services
             var newToken = GenerateRefreshToken();
             var newHash = HashToken(newToken);
 
-            var res = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _refreshTokenRepository.RefreshTokenRepo(oldHash, newHash, userId, t), TimeSpan.FromSeconds(2), bct), ct);
+            var res = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => tokens_repo.RefreshTokenRepo(oldHash, newHash, userId, t), TimeSpan.FromSeconds(2), bct), ct);
             if (!res)
                 return null;
             return newToken;
@@ -84,16 +83,16 @@ namespace TodoHub.Main.Core.Services
         public async Task<Guid?> GetUserId(string token, CancellationToken ct)
         {
             string hash_token = HashToken(token);
-            return await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _refreshTokenRepository.GetUserIdRepo(hash_token, t), TimeSpan.FromSeconds(2), bct), ct);
+            return await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => tokens_repo.GetUserIdRepo(hash_token, t), TimeSpan.FromSeconds(2), bct), ct);
         }
 
         public async Task<bool> RevokeRefreshToken(string token, CancellationToken ct)
         {
             var hash_token = HashToken(token);
-            var temp = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _refreshTokenRepository.GetTokenRepo(hash_token, t), TimeSpan.FromSeconds(2), bct), ct);
+            var temp = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => tokens_repo.GetTokenRepo(hash_token, t), TimeSpan.FromSeconds(2), bct), ct);
             if (temp != null && temp.IsActive)
             {
-                var res = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _refreshTokenRepository.RevokeRefreshTokenRepo(hash_token, t), TimeSpan.FromSeconds(2), bct), ct);
+                var res = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => tokens_repo.RevokeRefreshTokenRepo(hash_token, t), TimeSpan.FromSeconds(2), bct), ct);
                 return res;
             }
             return false;
@@ -102,7 +101,7 @@ namespace TodoHub.Main.Core.Services
         public async Task<bool> isRefreshTokenValid(string token, CancellationToken ct)
         {
             var hash_token = HashToken(token);
-            return await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _refreshTokenRepository.isRefreshTokenValidRepo(hash_token, t), TimeSpan.FromSeconds(2), bct), ct);
+            return await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => tokens_repo.isRefreshTokenValidRepo(hash_token, t), TimeSpan.FromSeconds(2), bct), ct);
         }
     }
 }

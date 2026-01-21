@@ -7,17 +7,26 @@ namespace TodoHub.Main.Core.Services
 {
     public class RefreshTokensCleanerService : IRefreshTokensCleanerService
     {
-        private readonly IRefreshTokenRepository _refreshTokenRepository;
+        private readonly IRefreshTokenRepository tokens_repo;
         private readonly DbBulkhead _dbBulkhead;
         public RefreshTokensCleanerService(IRefreshTokenRepository rep, DbBulkhead dbBulkhead)
         {
-            _refreshTokenRepository = rep;
+            tokens_repo = rep;
             _dbBulkhead = dbBulkhead;
         }
 
-        public async Task CleanAllRefreshTokens(CancellationToken ct)
+        public async Task<Result<bool>> CleanAllRefreshTokens(CancellationToken ct)
         {
-            await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => _refreshTokenRepository.DeleteOldTokensRepo(t), TimeSpan.FromSeconds(5), bct), ct);
+            try
+            {
+                var response = await _dbBulkhead.ExecuteAsync(bct => ResilienceExecutor.WithTimeout(t => tokens_repo.DeleteOldTokensRepo(t), TimeSpan.FromSeconds(5), bct), ct);
+                return Result<bool>.Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return Result<bool>.Fail(ex.Message);
+            }
+            
         }
     }
 }

@@ -23,13 +23,13 @@ namespace TodoHub.Main.API.Controllers
         [RequestTimeout(2000)]
         [HttpGet()]
         [EnableRateLimiting("TodosPolicy")]
-        public async Task<IActionResult> GetTodos(DateTime? lastCreated, Guid? lastId, CancellationToken ct)
+        public async Task<IActionResult> GetTodos(CancellationToken ct)
         {
             var userIdClaim = User.FindFirst("UserId")?.Value;
             if (userIdClaim is null || !Guid.TryParse(userIdClaim, out var userId))
                 return Unauthorized("Invalid token");
 
-            var todos = await _todoService.GetTodosAsync(userId, lastCreated, lastId, ct);
+            var todos = await _todoService.GetTodosAsync(userId, ct);
             if (!todos.Success)
             {
                 return NotFound();

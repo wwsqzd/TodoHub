@@ -12,7 +12,7 @@ namespace TodoHub.Main.Core.Interfaces
         Task<UserEntity?> GetUserByEmailAsyncRepo(string email, CancellationToken ct);
         Task<UserEntity?> GetUserByIdAsyncRepo(Guid id, CancellationToken ct);
         Task<List<UserDTO>> GetUsersAsyncRepo(CancellationToken ct);
-        Task<UserDTO> GetMeRepo(Guid id, CancellationToken ct);
+        Task<UserDTO?> GetMeRepo(Guid id, CancellationToken ct);
         Task<bool> IsUserAdminRepo(Guid id, CancellationToken ct);
         Task AddGoogleUserAsyncRepo(UserGoogleDTO user, CancellationToken ct);
         Task AddGitHubUserAsyncRepo(UserGitHubDTO user, CancellationToken ct);

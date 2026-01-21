@@ -204,6 +204,7 @@ export const fetchIsAdmin = async () => {
 export const GetUsers = async () => {
   try {
     const res = await api.get(`${API_URL}/users`, { withCredentials: true });
+    console.log(res);
     if (res.status !== 200) throw new Error("Error fetching users");
     return res.data;
   } catch (err: unknown) {

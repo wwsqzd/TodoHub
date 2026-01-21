@@ -28,24 +28,26 @@ namespace TodoHub.Main.Core.Services
         }
 
         // get 10 todos and more
-        public async Task<List<TodoDTO>> GetTodosAsync(Guid UserId, DateTime? lastCreated = null, Guid? lastId = null)
+        public async Task<List<TodoDTO>?> GetTodosAsync(Guid userId)
         {
-            string HashKey = $"todos:{UserId}";
-            var all = await _db.HashGetAllAsync(HashKey);
+            var hashKey = $"todos:{userId}";
+            var all = await _db.HashGetAllAsync(hashKey);
 
-            var query = all.Select(x => JsonSerializer.Deserialize<TodoDTO>(x.Value)!);
-            
-            if (lastCreated != null && lastId != null)
-            {
-                query = query.Where(t => t.CreatedDate < lastCreated || (t.CreatedDate == lastCreated.Value && t.Id.CompareTo(lastId.Value) < 0));
-            }
+            var todos = all
+                .Select(x =>
+                {
+                    try { return JsonSerializer.Deserialize<TodoDTO>(x.Value); }
+                    catch { return null; }
+                })
+                .Where(t => t != null)
+                .Select(t => t!)
+                .OrderBy(t => t.IsCompleted)              
+                .ThenByDescending(t => t.CreatedDate)    
+                .ThenByDescending(t => t.Id)              
+                .Take(10)
+                .ToList();
 
-            query = query.OrderBy(t => t.IsCompleted)
-                      .ThenByDescending(t => t.CreatedDate)
-                      .ThenByDescending(t => t.Id);
-
-            return query.Take(10).ToList();
-
+            return todos;
         }
 
         // delete cache

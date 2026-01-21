@@ -96,11 +96,12 @@ namespace TodoHub.Main.DataAccess.Repository
         }
 
         // get profile
-        public async Task<UserDTO> GetMeRepo(Guid id, CancellationToken ct)
+        public async Task<UserDTO?> GetMeRepo(Guid id, CancellationToken ct)
         {
             Log.Information("GetMeRepo starting in UserRepository");
 
             var user = await _context.Users.FindAsync([id],ct);
+            if (user == null) return null;
             var userDto = _mapper.Map<UserDTO>(user);
             userDto.Number_of_Todos = await _context.Todos.CountAsync(todo => todo.OwnerId == id, ct);
             return userDto;
