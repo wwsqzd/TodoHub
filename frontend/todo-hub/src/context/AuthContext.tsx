@@ -6,7 +6,7 @@ import {
   ReactNode,
   useEffect,
 } from "react";
-import { fetchIsAdmin } from "@/lib/api";
+import { fetchIsAdmin, refreshToken } from "@/lib/api";
 
 type AuthContextType = {
   accessToken: string | null;
@@ -45,8 +45,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsAdmin(res.value);
           setAccessToken(token);
         } else {
-          setAccessToken(null);
-          setIsAdmin(false);
+          const res = await refreshToken();
+          if (res?.value?.token) {
+            setAccessToken(res.value.token);
+            const adminRes = await fetchIsAdmin();
+            setIsAdmin(adminRes.value);
+          } else {
+            setAccessToken(null);
+            setIsAdmin(false);
+          }
         }
       } catch (err) {
         console.error("Auth check failed:", err);

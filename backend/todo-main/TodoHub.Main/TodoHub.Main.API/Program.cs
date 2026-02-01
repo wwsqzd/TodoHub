@@ -18,6 +18,7 @@ using TodoHub.Main.DataAccess.Repository;
 using Elastic.Clients.Elasticsearch;
 using Prometheus;
 using TodoHub.Main.Core.Common;
+using TodoHub.Main.Core.Middleware;
 
 
 // logger
@@ -28,23 +29,24 @@ foreach (var file in Directory.GetFiles("Logs"))
 }
 
 Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Information() 
+    .MinimumLevel.Information()
+    .Enrich.FromLogContext() 
     .WriteTo.Console(
-        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"
+        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] ({CorrelationId}) {Message:lj}{NewLine}{Exception}"
     )
-    
     .WriteTo.Logger(lc => lc
         .Filter.ByIncludingOnly(e =>
-            e.Properties.ContainsKey("SourceContext") == false ||
+            !e.Properties.ContainsKey("SourceContext") ||
             e.Properties["SourceContext"].ToString().Contains("TodoHub.Main")
         )
         .WriteTo.File(
             logFile,
             rollingInterval: RollingInterval.Day,
-            outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
+            outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] ({CorrelationId}) {Message:lj}{NewLine}{Exception}"
         )
     )
     .CreateLogger();
+
 
 try
 {
@@ -52,7 +54,7 @@ try
     var builder = WebApplication.CreateBuilder(args);
 
     //logger
-    builder.Services.AddSerilog();
+    builder.Host.UseSerilog(Log.Logger);
 
 
     // link 
@@ -293,7 +295,7 @@ try
     var app = builder.Build();
 
 
-    
+    app.UseMiddleware<CorrelationIdMiddleware>();
 
     // Resilience.Timeouts
     app.UseRequestTimeouts();

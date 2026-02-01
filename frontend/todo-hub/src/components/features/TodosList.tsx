@@ -19,7 +19,7 @@ type SortOrder = "newest" | "oldest";
 
 const TodosList = forwardRef<HTMLDivElement, Props>(function TodosList(
   { todos, handleButton, onDelete, onModify, onEdit },
-  ref
+  ref,
 ) {
   const { language } = useLanguage();
   const t = translations[language];

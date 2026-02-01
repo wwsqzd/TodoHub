@@ -4,7 +4,8 @@ import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
   
-  const token = request.cookies.get("accessToken")?.value;
+  const accessToken = request.cookies.get("accessToken")?.value;
+  const refreshToken = request.cookies.get("refreshToken")?.value;
 
   const isAuthPage = request.nextUrl.pathname.startsWith("/auth/login") 
                   || request.nextUrl.pathname.startsWith("/auth/register");
@@ -12,25 +13,19 @@ export function middleware(request: NextRequest) {
   const isProtectedPage = request.nextUrl.pathname.startsWith("/dashboard")
                         || request.nextUrl.pathname.startsWith("/profile");
 
-  // Если токен есть → не пускать на /login, /register
-  if (token && isAuthPage) {
-    console.log("Redirecting to /dashboard because user is authenticated");
+  if ((accessToken || refreshToken) && isAuthPage) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // Если токена нет → не пускать на приватные маршруты
-  if (!token && isProtectedPage) {
-    console.log("Redirecting to /auth/login because user is not authenticated");
+  if (isProtectedPage) {
+    if (accessToken) return NextResponse.next();
+    if (refreshToken) return NextResponse.next();
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
-  // Если нет токена, но лезет в админку
-  if (!token && request.nextUrl.pathname.startsWith("/admin")) {
-    return NextResponse.redirect(new URL("/auth/login", request.url));
-  }
+  return NextResponse.next();
 }
 
-// Укажем, на какие роуты распространяется middleware
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*", "/auth/login", "/auth/register", "/profile"],
+  matcher: ["/dashboard/:path*", "/admin/:path*", "/profile", "/auth/login", "/auth/register"],
 };

@@ -55,6 +55,14 @@ services:
       # - GF_SECURITY_ADMIN_PASSWORD=admin
     restart: unless-stopped
 
+  k6:
+    image: grafana/k6:latest
+    working_dir: /scripts
+    volumes:
+      - ./k6:/scripts
+    entrypoint: ["sleep", "infinity"]
+  
+
 volumes:
   es_data:
   rabbit_data:
